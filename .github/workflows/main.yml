@@ -1,0 +1,381 @@
+name: Build Zeeshan CPU Engine APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Zeeshan CPU Engine Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.5"
+
+      # =========================================================================
+      # STEP 1: Generate Project Base & Gradle Configs
+      # =========================================================================
+      - name: Generate Project Base & C++ NDK Dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p app/src/main/java/com/zeeshan/cpuengine
+          mkdir -p app/src/main/cpp
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
+          mkdir -p app/src/main/res/layout
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx6144m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          org.gradle.daemon=false
+          EOF
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          rootProject.name = "ZeeshanCpuEngine"
+          include(":app")
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id "com.android.application" version "8.2.2" apply false
+              id "org.jetbrains.kotlin.android" version "1.9.22" apply false
+          }
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id "com.android.application"
+              id "org.jetbrains.kotlin.android"
+          }
+          android {
+              namespace "com.zeeshan.cpuengine"
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.zeeshan.cpuengine"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.ZEESHAN-CPU"
+
+                  externalNativeBuild {
+                      cmake {
+                          cppFlags "-O3 -ffast-math -fopenmp"
+                          abiFilters "arm64-v8a", "armeabi-v7a"
+                      }
+                  }
+              }
+              externalNativeBuild {
+                  cmake {
+                      path "src/main/cpp/CMakeLists.txt"
+                      version "3.22.1"
+                  }
+              }
+              buildTypes { 
+                  debug {
+                      minifyEnabled false
+                  }
+                  release { 
+                      minifyEnabled false 
+                  } 
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = "17" }
+          }
+          dependencies {
+              implementation "androidx.core:core-ktx:1.13.1"
+              implementation "androidx.appcompat:appcompat:1.7.0"
+              implementation "com.google.android.material:material:1.12.0"
+              implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+          }
+          EOF
+
+      # =========================================================================
+      # STEP 2: C++ Native Engine for Processing & Graphics Rendering
+      # =========================================================================
+      - name: Write C++ Engine Source & CMake Script
+        run: |
+          set -euo pipefail
+
+          cat > app/src/main/cpp/CMakeLists.txt <<'EOF'
+          cmake_minimum_required(VERSION 3.22.1)
+          project("zeeshan_cpu_engine")
+
+          add_library(
+              zeeshan_cpu_engine
+              SHARED
+              native-engine.cpp
+          )
+
+          find_library(log-lib log)
+          find_library(jnigraphics-lib jnigraphics)
+
+          target_link_libraries(
+              zeeshan_cpu_engine
+              ${log-lib}
+              ${jnigraphics-lib}
+          )
+          EOF
+
+          cat > app/src/main/cpp/native-engine.cpp <<'EOF'
+          #include <jni.h>
+          #include <android/log.h>
+          #include <android/bitmap.h>
+
+          #define LOG_TAG "ZeeshanCpuEngine"
+          #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+
+          extern "C" JNIEXPORT void JNICALL
+          Java_com_zeeshan_cpuengine_MainActivity_nativeInitEngine(
+              JNIEnv* env,
+              jobject thiz
+          ) {
+              LOGI("Zeeshan Native CPU Engine Initialized Successfully.");
+          }
+          EOF
+
+      # =========================================================================
+      # STEP 3: UI Layout & Custom Processor View Creation
+      # =========================================================================
+      - name: Write Custom View & UI Layout
+        run: |
+          set -euo pipefail
+
+          # Create Custom View Code for CPU Drawing
+          cat > app/src/main/java/com/zeeshan/cpuengine/CpuDisplayView.kt <<'EOF'
+          package com.zeeshan.cpuengine
+
+          import android.content.Context
+          import android.graphics.*
+          import android.util.AttributeSet
+          import android.view.View
+
+          class CpuDisplayView @JvmOverloads constructor(
+              context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+          ) : View(context, attrs, defStyleAttr) {
+
+              private val bgPaint = Paint().apply { color = Color.parseColor("#080D14") }
+              private val circuitPaint = Paint().apply {
+                  color = Color.parseColor("#1E3A5F")
+                  strokeWidth = 4f
+                  style = Paint.Style.STROKE
+                  isAntiAlias = true
+              }
+              private val cpuBodyPaint = Paint().apply {
+                  color = Color.parseColor("#A0A5AA")
+                  style = Paint.Style.FILL
+                  isAntiAlias = true
+              }
+              private val cpuCorePaint = Paint().apply {
+                  color = Color.parseColor("#D0D5DD")
+                  style = Paint.Style.FILL
+                  isAntiAlias = true
+              }
+              private val pinPaint = Paint().apply {
+                  color = Color.parseColor("#D4AF37")
+                  strokeWidth = 6f
+                  style = Paint.Style.STROKE
+              }
+              private val eyeGlowPaint = Paint().apply {
+                  color = Color.parseColor("#00E5FF")
+                  style = Paint.Style.FILL
+                  isAntiAlias = true
+                  maskFilter = BlurMaskFilter(15f, BlurMaskFilter.Blur.NORMAL)
+              }
+              private val eyeInnerPaint = Paint().apply {
+                  color = Color.parseColor("#FFFFFF")
+                  style = Paint.Style.FILL
+                  isAntiAlias = true
+              }
+              private val textPaint = Paint().apply {
+                  color = Color.parseColor("#2C3E50")
+                  textSize = 28f
+                  typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                  textAlign = Paint.Align.CENTER
+                  isAntiAlias = true
+              }
+
+              override fun onDraw(canvas: Canvas) {
+                  super.onDraw(canvas)
+                  val w = width.toFloat()
+                  val h = height.toFloat()
+
+                  // 1. Circuit Background Lines
+                  canvas.drawRect(0f, 0f, w, h, bgPaint)
+                  for (i in 0..10) {
+                      val yPos = h * (i / 10f)
+                      canvas.drawLine(0f, yPos, w, yPos, circuitPaint)
+                      val xPos = w * (i / 10f)
+                      canvas.drawLine(xPos, 0f, xPos, h, circuitPaint)
+                  }
+
+                  // 2. CPU Base Body (Square)
+                  val cpuSize = w.coerceAtMost(h) * 0.65f
+                  val left = (w - cpuSize) / 2f
+                  val top = (h - cpuSize) / 2f
+                  val right = left + cpuSize
+                  val bottom = top + cpuSize
+
+                  // Pins around CPU
+                  for (p in 0..15) {
+                      val offset = cpuSize * (p / 15f)
+                      canvas.drawLine(left + offset, top - 20f, left + offset, top, pinPaint)
+                      canvas.drawLine(left + offset, bottom, left + offset, bottom + 20f, pinPaint)
+                      canvas.drawLine(left - 20f, top + offset, left, top + offset, pinPaint)
+                      canvas.drawLine(right, top + offset, right + 20f, top + offset, pinPaint)
+                  }
+
+                  // Outer Metal Shell
+                  canvas.drawRoundRect(left, top, right, bottom, 24f, 24f, cpuBodyPaint)
+
+                  // Inner Heat Spreader
+                  val margin = cpuSize * 0.08f
+                  canvas.drawRoundRect(left + margin, top + margin, right - margin, bottom - margin, 16f, 16f, cpuCorePaint)
+
+                  // 3. Eyes (Serious/Official Look - Dual Camera Lens style)
+                  val centerY = top + cpuSize * 0.45f
+                  val eyeRadius = cpuSize * 0.12f
+                  val leftEyeX = left + cpuSize * 0.33f
+                  val rightEyeX = left + cpuSize * 0.67f
+
+                  // Glow & Lenses
+                  canvas.drawCircle(leftEyeX, centerY, eyeRadius, eyeGlowPaint)
+                  canvas.drawCircle(rightEyeX, centerY, eyeRadius, eyeGlowPaint)
+
+                  canvas.drawCircle(leftEyeX, centerY, eyeRadius * 0.5f, eyeInnerPaint)
+                  canvas.drawCircle(rightEyeX, centerY, eyeRadius * 0.5f, eyeInnerPaint)
+
+                  // 4. Text on CPU
+                  canvas.drawText("INTELLECTUS", w / 2f, top + cpuSize * 0.72f, textPaint)
+                  canvas.drawText("CPU PROFESSOR", w / 2f, top + cpuSize * 0.82f, textPaint)
+              }
+          }
+          EOF
+
+          # Layout with Plain Header, Plain Footer, and CPU View in Middle
+          cat > app/src/main/res/layout/activity_main.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#050B10"
+              android:orientation="vertical">
+
+              <!-- Plain Header Strip -->
+              <View
+                  android:layout_width="match_parent"
+                  android:layout_height="60dp"
+                  android:background="#0A121D" />
+
+              <!-- Main Display (Background + CPU Chip) -->
+              <com.zeeshan.cpuengine.CpuDisplayView
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1" />
+
+              <!-- Plain Footer Strip -->
+              <View
+                  android:layout_width="match_parent"
+                  android:layout_height="60dp"
+                  android:background="#0A121D" />
+
+          </LinearLayout>
+          EOF
+
+          cat > app/src/main/res/values/strings.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">CPU Professor</string>
+          </resources>
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:allowBackup="true"
+                  android:label="@string/app_name"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.AppCompat.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+      # =========================================================================
+      # STEP 4: MainActivity Setup
+      # =========================================================================
+      - name: Write Kotlin MainActivity
+        run: |
+          cat > app/src/main/java/com/zeeshan/cpuengine/MainActivity.kt <<'EOF'
+          package com.zeeshan.cpuengine
+
+          import android.os.Bundle
+          import androidx.appcompat.app.AppCompatActivity
+
+          class MainActivity : AppCompatActivity() {
+
+              companion {
+                  init {
+                      System.loadLibrary("zeeshan_cpu_engine")
+                  }
+              }
+
+              private external fun nativeInitEngine()
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  setContentView(R.layout.activity_main)
+
+                  // Initialize C++ Core Engine
+                  nativeInitEngine()
+              }
+          }
+          EOF
+
+      # =========================================================================
+      # STEP 5: Build Final APK
+      # =========================================================================
+      - name: Build Zeeshan CPU Engine Debug APK
+        run: |
+          gradle assembleDebug --no-daemon
+
+      - name: Upload Zeeshan CPU Engine Output APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zeeshan-CPU-Engine-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 7
+

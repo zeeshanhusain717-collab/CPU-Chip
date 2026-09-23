@@ -1,10 +1,11 @@
-name: Build Hyper Realistic 3D Brain AI APK
+name: Build CPU Utility APK
 
 on:
   push:
     branches:
       - main
       - master
+
   workflow_dispatch:
 
 permissions:
@@ -12,49 +13,110 @@ permissions:
 
 jobs:
   build:
-    name: Build 3D OpenGL Brain Debug APK
+    name: Build CPU Utility Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+
+      # =========================================================
+      # 01 - CHECKOUT
+      # =========================================================
+      - name: 01 - Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+
+      # =========================================================
+      # 02 - JAVA 17
+      # =========================================================
+      - name: 02 - Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
 
-      # =========================================================================
-      # STEP 1: Project Architecture Setup
-      # =========================================================================
-      - name: Create Android Project Structure
+      # =========================================================
+      # 03 - GRADLE
+      # =========================================================
+      - name: 03 - Setup Gradle 8.5
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.5"
+
+
+      # =========================================================
+      # 04 - CLEAN OLD NOTICE APP COMPLETELY
+      # =========================================================
+      - name: 04 - Remove Old Zeeshan Notice App
         run: |
           set -euo pipefail
-          mkdir -p app/src/main/java/com/zeeshan/brainai
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/layout
 
+          rm -rf app
+          rm -rf .gradle
+
+          rm -f settings.gradle
+          rm -f build.gradle
+          rm -f gradle.properties
+
+          mkdir -p app/src/main/java/com/cpuutility/app
+          mkdir -p app/src/main/assets
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+
+
+      # =========================================================
+      # 05 - GRADLE PROPERTIES
+      # =========================================================
+      - name: 05 - Create Gradle Properties
+        run: |
           cat > gradle.properties <<'EOF'
-          org.gradle.jvmargs=-Xmx6144m -Dfile.encoding=UTF-8
+          org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
           android.useAndroidX=true
           android.nonTransitiveRClass=true
           org.gradle.daemon=false
           EOF
 
+
+      # =========================================================
+      # 06 - SETTINGS GRADLE
+      # =========================================================
+      - name: 06 - Create Settings Gradle
+        run: |
           cat > settings.gradle <<'EOF'
-          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories { google(); mavenCentral() }
+
+              repositories {
+                  google()
+                  mavenCentral()
+              }
           }
-          rootProject.name = "BrainAiEngine"
+
+          rootProject.name = "CPUUtility"
+
           include(":app")
           EOF
 
+
+      # =========================================================
+      # 07 - ROOT BUILD GRADLE
+      # =========================================================
+      - name: 07 - Create Root Build Gradle
+        run: |
           cat > build.gradle <<'EOF'
           plugins {
               id "com.android.application" version "8.2.2" apply false
@@ -62,368 +124,2423 @@ jobs:
           }
           EOF
 
+
+      # =========================================================
+      # 08 - APP BUILD GRADLE
+      # =========================================================
+      - name: 08 - Create CPU Utility App Gradle
+        run: |
           cat > app/build.gradle <<'EOF'
           plugins {
               id "com.android.application"
               id "org.jetbrains.kotlin.android"
           }
+
           android {
-              namespace "com.zeeshan.brainai"
+              namespace "com.cpuutility.app"
+
               compileSdk 34
+
               defaultConfig {
-                  applicationId "com.zeeshan.brainai"
-                  minSdk 24
+                  applicationId "com.cpuutility.app"
+
+                  minSdk 26
                   targetSdk 34
+
                   versionCode 1
-                  versionName "4.0.3D-BRAIN-FIXED"
+                  versionName "1.0"
               }
-              buildTypes { 
-                  debug { minifyEnabled false }
-                  release { minifyEnabled false } 
+
+              buildTypes {
+                  debug {
+                      minifyEnabled false
+                  }
+
+                  release {
+                      minifyEnabled false
+                  }
               }
+
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
-              kotlinOptions { jvmTarget = "17" }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
           }
+
           dependencies {
               implementation "androidx.core:core-ktx:1.13.1"
               implementation "androidx.appcompat:appcompat:1.7.0"
-              implementation "com.google.android.material:material:1.12.0"
           }
           EOF
 
-      # =========================================================================
-      # STEP 2: OpenGL 3D Engine & Interactive View (Horizontal Rotation Only)
-      # =========================================================================
-      - name: Write OpenGL 3D Interactive Renderer
+
+      # =========================================================
+      # 09 - COLORS
+      # =========================================================
+      - name: 09 - Create Colors
         run: |
-          cat > app/src/main/java/com/zeeshan/brainai/BrainOpenGLView.kt <<'EOF'
-          package com.zeeshan.brainai
+          cat > app/src/main/res/values/colors.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
 
-          import android.content.Context
-          import android.graphics.*
-          import android.os.SystemClock
-          import android.util.AttributeSet
-          import android.view.GestureDetector
-          import android.view.MotionEvent
-          import android.view.View
-          import kotlin.math.*
+              <color name="black">#000000</color>
+              <color name="cpu_black">#010302</color>
 
-          class BrainOpenGLView @JvmOverloads constructor(
-              context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-          ) : View(context, attrs, defStyleAttr) {
+              <color name="neon_green">#00FF88</color>
+              <color name="neon_green_light">#7CFFD0</color>
 
-              var onBrainDoubleTappedListener: (() -> Unit)? = null
+              <color name="neon_orange">#FF7B00</color>
+              <color name="neon_orange_light">#FFB35A</color>
 
-              // Paint Engine
-              private val bgPaint = Paint().apply { color = Color.parseColor("#060A08") }
-              private val copperTrackPaint = Paint().apply {
-                  color = Color.parseColor("#4A3525")
-                  strokeWidth = 4f
-                  style = Paint.Style.STROKE
-                  isAntiAlias = true
-              }
-              private val neonGreenSocketPaint = Paint().apply {
-                  color = Color.parseColor("#00FF66")
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
-              }
-              private val chipBasePaint = Paint().apply {
-                  color = Color.parseColor("#121816")
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
-              }
-              private val pinPaint = Paint().apply {
-                  color = Color.parseColor("#D4AF37")
-                  strokeWidth = 6f
-                  style = Paint.Style.STROKE
-              }
-              private val neuralPaint = Paint().apply {
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
-              }
+              <color name="white">#FFFFFF</color>
 
-              // State Mechanics
-              private var brainProgress = 0f
-              private var isBrainEmerging = false
-              private var emergenceStartTime = 0L
-
-              // 3D Touch Rotation (HORIZONTAL ONLY)
-              private val rotX = 18f // Fixed Tilt Pitch (No Vertical Movement)
-              private var rotY = 0f  // 360 Degree Horizontal Rotation
-              private var previousTouchX = 0f
-
-              private class Point3D(val x: Float, val y: Float, val z: Float, val intensity: Float)
-              private val brainMesh = ArrayList<Point3D>()
-
-              init {
-                  // Generate Dense Organic Brain Mesh (~2500 Neural Nodes)
-                  val rnd = java.util.Random(101)
-                  for (i in 0 until 2500) {
-                      val u = rnd.nextFloat() * 2 * PI.toFloat()
-                      val v = rnd.nextFloat() * PI.toFloat()
-
-                      // Organic Fold Simulations matching image
-                      val fold = sin(v * 12f) * cos(u * 12f) * 18f
-                      
-                      var rX = (sin(v) * cos(u)) * (140f + fold) * 1.25f
-                      var rY = (cos(v)) * (140f + fold) * 0.85f
-                      var rZ = (sin(v) * sin(u)) * (140f + fold) * 1.05f
-
-                      if (abs(rX) < 15f) rX *= 0.3f // Hemisphere divide
-
-                      val intensity = (fold + 18f) / 36f
-                      brainMesh.add(Point3D(rX, rY, rZ, intensity))
-                  }
-              }
-
-              private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                  override fun onDoubleTap(e: MotionEvent): Boolean {
-                      if (!isBrainEmerging && brainProgress == 0f) {
-                          // First Double Tap on CPU: Start 3D Brain Emergence Animation
-                          isBrainEmerging = true
-                          emergenceStartTime = SystemClock.uptimeMillis()
-                          invalidate()
-                          return true
-                      } else if (brainProgress > 0.7f) {
-                          // Double Tap on Formed Brain: Trigger Speech AI
-                          onBrainDoubleTappedListener?.invoke()
-                          return true
-                      }
-                      return super.onDoubleTap(e)
-                  }
-              })
-
-              override fun onTouchEvent(event: MotionEvent): Boolean {
-                  gestureDetector.onTouchEvent(event)
-
-                  if (brainProgress > 0.4f) {
-                      val x = event.x
-
-                      when (event.action) {
-                          MotionEvent.ACTION_DOWN -> {
-                              previousTouchX = x
-                          }
-                          MotionEvent.ACTION_MOVE -> {
-                              val dx = x - previousTouchX
-
-                              // ROTATE HORIZONTALLY ONLY (Left / Right 360°)
-                              rotY += dx * 0.7f
-
-                              previousTouchX = x
-                              invalidate()
-                          }
-                      }
-                  }
-                  return true
-              }
-
-              override fun onDraw(canvas: Canvas) {
-                  super.onDraw(canvas)
-                  val w = width.toFloat()
-                  val h = height.toFloat()
-
-                  // 1. Dark Cyberpunk PCB Background
-                  canvas.drawRect(0f, 0f, w, h, bgPaint)
-
-                  // 2. Copper PCB Tracks & Green Neon Lighting
-                  val step = 100f
-                  for (i in 0..12) {
-                      val pX = (i * step) % w
-                      canvas.drawLine(pX, 0f, pX + 40f, h, copperTrackPaint)
-                  }
-
-                  // 3. Clean Metallic CPU Chip Socket (NO TEXT)
-                  val cpuSize = w.coerceAtMost(h) * 0.68f
-                  val cx = w / 2f
-                  val cy = h / 2f + 50f
-                  val left = cx - cpuSize / 2f
-                  val top = cy - cpuSize / 2f
-                  val right = cx + cpuSize / 2f
-                  val bottom = cy + cpuSize / 2f
-
-                  // Glowing Green Internal Socket Base
-                  canvas.drawRoundRect(left + 25f, top + 25f, right - 25f, bottom - 25f, 16f, 16f, neonGreenSocketPaint)
-
-                  // Gold Pins
-                  for (p in 0..28) {
-                      val pos = cpuSize * (p / 28f)
-                      canvas.drawLine(left + pos, top - 25f, left + pos, top, pinPaint)
-                      canvas.drawLine(left + pos, bottom, left + pos, bottom + 25f, pinPaint)
-                  }
-
-                  // Outer Clean Metal Base Plate
-                  canvas.drawRoundRect(left, top, right, bottom, 24f, 24f, chipBasePaint)
-
-                  // Handle Emergence Timings (3 to 5 Seconds)
-                  if (isBrainEmerging && brainProgress < 1.0f) {
-                      val elapsed = (SystemClock.uptimeMillis() - emergenceStartTime) / 4000f
-                      brainProgress = elapsed.coerceAtMost(1.0f)
-                      invalidate()
-                  } else if (brainProgress >= 1.0f) {
-                      rotY += 0.25f // Smooth Auto Horizontal Drift
-                      invalidate()
-                  } else {
-                      invalidate()
-                  }
-
-                  // 4. Render 3D Fiery Brain (Fixed Vertical Pitch, 360 Horizontal Spin)
-                  if (brainProgress > 0f) {
-                      val radX = Math.toRadians(rotX.toDouble())
-                      val radY = Math.toRadians(rotY.toDouble())
-                      val scale = brainProgress
-
-                      brainMesh.forEach { p ->
-                          // Fixed Pitch (X-axis) and Dynamic Yaw (Y-axis) Projection
-                          val y1 = p.y * cos(radX) - p.z * sin(radX)
-                          val z1 = p.y * sin(radX) + p.z * cos(radX)
-
-                          val x2 = p.x * cos(radY) + z1 * sin(radY)
-                          val z2 = -p.x * sin(radY) + z1 * cos(radY)
-
-                          val finalX = x2 * scale
-                          val finalY = y1 * scale
-                          val finalZ = z2 * scale
-
-                          val projection = (finalZ + 400f) / 400f
-                          val screenX = cx + finalX
-                          val screenY = (cy - 120f * scale) + finalY // Suspended above CPU
-
-                          if (projection > 0.1f) {
-                              val pRadius = (projection * 3.8f).coerceAtLeast(1.2f)
-
-                              // Fiery Cyber Neon Orange Color Theme
-                              val alpha = (240 * projection * brainProgress).toInt().coerceIn(0, 255)
-                              val red = 255
-                              val green = (60 + p.intensity * 160).toInt().coerceIn(0, 255)
-                              val blue = (p.intensity * 30).toInt().coerceIn(0, 255)
-
-                              neuralPaint.color = Color.argb(alpha, red, green, blue)
-                              canvas.drawCircle(screenX, screenY, pRadius, neuralPaint)
-                          }
-                      }
-                  }
-              }
-          }
+          </resources>
           EOF
 
-      # =========================================================================
-      # STEP 3: Layout & Manifest Setup
-      # =========================================================================
-      - name: Setup Layout Files
+
+      # =========================================================
+      # 10 - THEME
+      # =========================================================
+      - name: 10 - Create Theme
+        run: |
+          cat > app/src/main/res/values/themes.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+
+              <style name="Theme.CPUUtility"
+                  parent="Theme.AppCompat.DayNight.NoActionBar">
+
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:windowFullscreen">true</item>
+                  <item name="android:windowActionModeOverlay">true</item>
+                  <item name="android:colorAccent">#00FF88</item>
+                  <item name="android:navigationBarColor">#000000</item>
+                  <item name="android:statusBarColor">#000000</item>
+                  <item name="android:windowLightStatusBar">false</item>
+
+              </style>
+
+          </resources>
+          EOF
+
+
+      # =========================================================
+      # 11 - MAIN LAYOUT
+      # =========================================================
+      - name: 11 - Create Main Layout
         run: |
           cat > app/src/main/res/layout/activity_main.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+          <FrameLayout
+              xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#060A08">
+              android:background="#000000">
 
-              <com.zeeshan.brainai.BrainOpenGLView
-                  android:id="@+id/brainOpenGLView"
+              <WebView
+                  android:id="@+id/webView"
                   android:layout_width="match_parent"
-                  android:layout_height="match_parent" />
+                  android:layout_height="match_parent"
+                  android:background="#000000" />
 
           </FrameLayout>
           EOF
 
-          cat > app/src/main/res/values/strings.xml <<'EOF'
+
+      # =========================================================
+      # 12 - SIMPLE APP ICON
+      # =========================================================
+      - name: 12 - Create CPU Utility Icon
+        run: |
+          cat > app/src/main/res/drawable/ic_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <string name="app_name">Brain AI 3D Engine</string>
-          </resources>
+
+          <vector
+              xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+
+              <path
+                  android:fillColor="#050807"
+                  android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
+
+              <path
+                  android:fillColor="#0B1813"
+                  android:pathData="M28,28 L80,28 L80,80 L28,80 Z" />
+
+              <path
+                  android:fillColor="#00FF88"
+                  android:pathData="M38,38 L70,38 L70,70 L38,70 Z" />
+
+              <path
+                  android:fillColor="#FF7B00"
+                  android:pathData="M45,45 L63,45 L63,63 L45,63 Z" />
+
+              <path
+                  android:fillColor="#FFFFFF"
+                  android:pathData="M51,49 L57,49 L57,59 L51,59 Z" />
+
+          </vector>
           EOF
 
+
+      # =========================================================
+      # 13 - ANDROID MANIFEST
+      # =========================================================
+      - name: 13 - Create Android Manifest
+        run: |
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+          <manifest
+              xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission
+                  android:name="android.permission.VIBRATE" />
+
               <application
-                  android:allowBackup="true"
-                  android:label="@string/app_name"
+                  android:allowBackup="false"
+                  android:fullBackupContent="false"
+                  android:hardwareAccelerated="true"
+                  android:icon="@drawable/ic_launcher"
+                  android:label="CPU Utility"
+                  android:roundIcon="@drawable/ic_launcher"
                   android:supportsRtl="true"
-                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
-                  <activity 
-                      android:name=".MainActivity" 
+                  android:theme="@style/Theme.CPUUtility">
+
+                  <activity
+                      android:name=".MainActivity"
                       android:exported="true"
-                      android:screenOrientation="portrait">
+                      android:screenOrientation="portrait"
+                      android:configChanges="orientation|screenSize|keyboardHidden">
+
                       <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
+
+                          <action
+                              android:name="android.intent.action.MAIN" />
+
+                          <category
+                              android:name="android.intent.category.LAUNCHER" />
+
                       </intent-filter>
+
                   </activity>
+
               </application>
+
           </manifest>
           EOF
 
-      # =========================================================================
-      # STEP 4: MainActivity with Speech AI Engine Triggered on Double Tap
-      # =========================================================================
-      - name: Write MainActivity Code
-        run: |
-          cat > app/src/main/java/com/zeeshan/brainai/MainActivity.kt <<'EOF'
-          package com.zeeshan.brainai
 
+      # =========================================================
+      # 14 - MAIN KOTLIN
+      # =========================================================
+      - name: 14 - Create MainActivity Kotlin
+        run: |
+          cat > app/src/main/java/com/cpuutility/app/MainActivity.kt <<'EOF'
+          package com.cpuutility.app
+
+          import android.annotation.SuppressLint
           import android.os.Bundle
+          import android.os.Build
+          import android.os.VibrationEffect
+          import android.os.Vibrator
           import android.speech.tts.TextToSpeech
+          import android.webkit.JavascriptInterface
+          import android.webkit.WebChromeClient
+          import android.webkit.WebView
+          import android.webkit.WebViewClient
           import androidx.appcompat.app.AppCompatActivity
           import java.util.Locale
 
-          class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+          class MainActivity :
+              AppCompatActivity(),
+              TextToSpeech.OnInitListener {
 
-              private lateinit var tts: TextToSpeech
-              private var isTtsReady = false
+              private lateinit var webView: WebView
 
+              private var textToSpeech: TextToSpeech? = null
+
+              private var ttsReady = false
+
+              @SuppressLint("SetJavaScriptEnabled")
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
+
+                  window.setFlags(
+                      android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                      android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
+                  )
+
+                  window.navigationBarColor =
+                      android.graphics.Color.BLACK
+
                   setContentView(R.layout.activity_main)
 
-                  tts = TextToSpeech(this, this)
+                  textToSpeech =
+                      TextToSpeech(this, this)
 
-                  val glView = findViewById<BrainOpenGLView>(R.id.brainOpenGLView)
-                  glView.onBrainDoubleTappedListener = {
-                      speakHelpText()
+                  webView =
+                      findViewById(R.id.webView)
+
+                  webView.settings.apply {
+
+                      javaScriptEnabled = true
+
+                      domStorageEnabled = true
+
+                      allowFileAccess = true
+
+                      allowContentAccess = true
+
+                      mediaPlaybackRequiresUserGesture = false
+
+                      builtInZoomControls = false
+
+                      displayZoomControls = false
+
+                  }
+
+                  webView.webViewClient =
+                      WebViewClient()
+
+                  webView.webChromeClient =
+                      WebChromeClient()
+
+                  webView.addJavascriptInterface(
+                      AndroidBridge(),
+                      "Android"
+                  )
+
+                  webView.loadUrl(
+                      "file:///android_asset/index.html"
+                  )
+              }
+
+              inner class AndroidBridge {
+
+                  @JavascriptInterface
+                  fun speak(message: String) {
+
+                      runOnUiThread {
+
+                          if (!ttsReady) {
+                              return@runOnUiThread
+                          }
+
+                          textToSpeech?.speak(
+                              message,
+                              TextToSpeech.QUEUE_FLUSH,
+                              null,
+                              "CPU_UTILITY_MESSAGE"
+                          )
+                      }
+                  }
+
+                  @JavascriptInterface
+                  fun vibration() {
+
+                      runOnUiThread {
+
+                          try {
+
+                              val vibrator =
+                                  getSystemService(
+                                      VIBRATOR_SERVICE
+                                  ) as Vibrator
+
+                              if (
+                                  Build.VERSION.SDK_INT >=
+                                  Build.VERSION_CODES.O
+                              ) {
+
+                                  vibrator.vibrate(
+                                      VibrationEffect.createOneShot(
+                                          45L,
+                                          VibrationEffect.DEFAULT_AMPLITUDE
+                                      )
+                                  )
+
+                              } else {
+
+                                  @Suppress(
+                                      "DEPRECATION"
+                                  )
+
+                                  vibrator.vibrate(45L)
+                              }
+
+                          } catch (_: Exception) {
+                          }
+                      }
                   }
               }
 
               override fun onInit(status: Int) {
-                  if (status == TextToSpeech.SUCCESS) {
-                      val result = tts.setLanguage(Locale("hi", "IN"))
-                      if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                          tts.language = Locale.US
-                      }
-                      isTtsReady = true
-                  }
-              }
 
-              private fun speakHelpText() {
-                  if (isTtsReady) {
-                      tts.speak("मैं आपकी क्या मदद कर सकता हूँ?", TextToSpeech.QUEUE_FLUSH, null, "BrainAI_Voice")
+                  if (
+                      status ==
+                      TextToSpeech.SUCCESS
+                  ) {
+
+                      ttsReady = true
+
+                      val result =
+                          textToSpeech?.setLanguage(
+                              Locale("hi", "IN")
+                          )
+
+                      if (
+                          result ==
+                          TextToSpeech.LANG_MISSING_DATA ||
+                          result ==
+                          TextToSpeech.LANG_NOT_SUPPORTED
+                      ) {
+
+                          textToSpeech?.language =
+                              Locale.US
+                      }
+
+                      textToSpeech?.setSpeechRate(
+                          0.92f
+                      )
+
+                      textToSpeech?.setPitch(
+                          1.0f
+                      )
                   }
               }
 
               override fun onDestroy() {
-                  if (::tts.isInitialized) {
-                      tts.stop()
-                      tts.shutdown()
+
+                  try {
+                      textToSpeech?.stop()
+                      textToSpeech?.shutdown()
+                  } catch (_: Exception) {
                   }
+
+                  try {
+                      webView.destroy()
+                  } catch (_: Exception) {
+                  }
+
                   super.onDestroy()
               }
           }
           EOF
 
-      # =========================================================================
-      # STEP 5: Compile & Build Debug APK
-      # =========================================================================
-      - name: Build Debug APK
-        run: |
-          gradle assembleDebug --no-daemon
 
-      - name: Upload Built APK Artifact
+      # =========================================================
+      # 15 - COMPLETE 3D CPU + BRAIN HTML
+      # =========================================================
+      - name: 15 - Create CPU Utility 3D Engine
+        run: |
+          cat > app/src/main/assets/index.html <<'EOF'
+          <!DOCTYPE html>
+
+          <html lang="hi">
+
+          <head>
+
+          <meta charset="UTF-8">
+
+          <meta
+              name="viewport"
+              content="width=device-width,
+              initial-scale=1.0,
+              maximum-scale=1.0,
+              user-scalable=no">
+
+          <title>CPU Utility</title>
+
+          <style>
+
+          :root {
+              --green: #00ff88;
+              --green2: #18d96f;
+              --green3: #7cffd0;
+
+              --orange: #ff7b00;
+              --orange2: #ffb35a;
+
+              --black: #000000;
+              --dark: #010302;
+          }
+
+          * {
+              box-sizing: border-box;
+
+              -webkit-tap-highlight-color:
+                  transparent;
+          }
+
+          html,
+          body {
+
+              width: 100%;
+              height: 100%;
+
+              margin: 0;
+
+              padding: 0;
+
+              overflow: hidden;
+
+              background: #000;
+
+              color: #fff;
+
+              font-family:
+                  Arial,
+                  Helvetica,
+                  sans-serif;
+
+              touch-action: none;
+          }
+
+          body {
+
+              display: flex;
+
+              justify-content: center;
+
+              align-items: center;
+
+              background:
+
+                  radial-gradient(
+                      circle at 50% 42%,
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .14
+                      ),
+                      transparent 30%
+                  ),
+
+                  radial-gradient(
+                      circle at 50% 95%,
+                      rgba(
+                          255,
+                          123,
+                          0,
+                          .11
+                      ),
+                      transparent 40%
+                  ),
+
+                  #010302;
+          }
+
+          #scene {
+
+              position: relative;
+
+              width: 100vw;
+
+              height: 100vh;
+
+              overflow: hidden;
+
+              perspective: 1200px;
+          }
+
+          .scanlines {
+
+              position: absolute;
+
+              inset: 0;
+
+              z-index: 50;
+
+              pointer-events: none;
+
+              opacity: .09;
+
+              background:
+
+                  repeating-linear-gradient(
+                      to bottom,
+                      transparent 0px,
+                      transparent 3px,
+                      rgba(
+                          255,
+                          255,
+                          255,
+                          .10
+                      ) 4px
+                  );
+          }
+
+          .topTitle {
+
+              position: absolute;
+
+              z-index: 40;
+
+              top: 4%;
+
+              left: 0;
+
+              right: 0;
+
+              text-align: center;
+
+              font-size:
+                  clamp(
+                      14px,
+                      4vw,
+                      21px
+                  );
+
+              font-weight: 900;
+
+              letter-spacing: 5px;
+
+              color: var(--green3);
+
+              text-shadow:
+
+                  0 0 5px var(--green),
+
+                  0 0 18px var(--green),
+
+                  0 0 35px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .55
+                      );
+          }
+
+          .status {
+
+              position: absolute;
+
+              z-index: 40;
+
+              top: 10%;
+
+              left: 0;
+
+              right: 0;
+
+              text-align: center;
+
+              font-size: 10px;
+
+              letter-spacing: 2px;
+
+              color: #63ffb2;
+
+              text-transform: uppercase;
+
+              text-shadow:
+                  0 0 10px var(--green);
+          }
+
+          .grid {
+
+              position: absolute;
+
+              left: -30%;
+
+              right: -30%;
+
+              bottom: -15%;
+
+              height: 52%;
+
+              transform:
+                  perspective(550px)
+                  rotateX(63deg);
+
+              background:
+
+                  linear-gradient(
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .16
+                      ) 1px,
+                      transparent 1px
+                  ),
+
+                  linear-gradient(
+                      90deg,
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .16
+                      ) 1px,
+                      transparent 1px
+                  );
+
+              background-size:
+                  45px 45px;
+
+              opacity: .45;
+
+              filter:
+                  drop-shadow(
+                      0 0 8px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .2
+                      )
+                  );
+          }
+
+          .stage {
+
+              position: absolute;
+
+              inset: 0;
+
+              display: flex;
+
+              justify-content: center;
+
+              align-items: center;
+
+              transform-style:
+                  preserve-3d;
+          }
+
+          /* =====================================================
+             CPU
+             ===================================================== */
+
+          .cpu {
+
+              position: absolute;
+
+              width:
+                  min(
+                      74vw,
+                      340px
+                  );
+
+              height:
+                  min(
+                      74vw,
+                      340px
+                  );
+
+              transform-style:
+                  preserve-3d;
+
+              cursor: pointer;
+
+              transition:
+
+                  opacity .6s ease,
+
+                  transform .6s ease,
+
+                  filter .6s ease;
+          }
+
+          .cpu-shell {
+
+              position: absolute;
+
+              inset: 0;
+
+              border-radius: 30px;
+
+              background:
+
+                  linear-gradient(
+                      145deg,
+                      #283630,
+                      #080d0b 48%,
+                      #18211e
+                  );
+
+              border:
+                  2px solid
+                  rgba(
+                      0,
+                      255,
+                      136,
+                      .55
+                  );
+
+              box-shadow:
+
+                  0 0 0 7px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .05
+                      ),
+
+                  0 0 40px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .30
+                      ),
+
+                  inset 0 0 55px
+                      rgba(
+                          0,
+                          0,
+                          0,
+                          .95
+                      );
+
+              transform:
+                  translateZ(0);
+          }
+
+          .cpu-shell::before {
+
+              content: "";
+
+              position: absolute;
+
+              inset: 15px;
+
+              border-radius: 22px;
+
+              border:
+                  1px solid
+                  rgba(
+                      0,
+                      255,
+                      136,
+                      .28
+                  );
+
+              box-shadow:
+
+                  inset 0 0 25px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .09
+                      );
+          }
+
+          .cpu-shell::after {
+
+              content: "";
+
+              position: absolute;
+
+              inset: -9px;
+
+              border-radius: 35px;
+
+              border:
+                  1px solid
+                  rgba(
+                      255,
+                      123,
+                      0,
+                      .28
+                  );
+
+              animation:
+                  cpuPulse 2s
+                  ease-in-out
+                  infinite;
+          }
+
+          @keyframes cpuPulse {
+
+              0% {
+                  opacity: .25;
+                  transform: scale(.98);
+              }
+
+              50% {
+                  opacity: .8;
+                  transform: scale(1.015);
+              }
+
+              100% {
+                  opacity: .25;
+                  transform: scale(.98);
+              }
+          }
+
+          .chip {
+
+              position: absolute;
+
+              left: 50%;
+
+              top: 50%;
+
+              width: 58%;
+
+              height: 58%;
+
+              transform:
+                  translate(-50%,-50%)
+                  translateZ(35px);
+
+              border-radius: 12px;
+
+              background:
+
+                  linear-gradient(
+                      145deg,
+                      #17231f,
+                      #050807
+                  );
+
+              border:
+                  2px solid
+                  rgba(
+                      255,
+                      123,
+                      0,
+                      .55
+                  );
+
+              box-shadow:
+
+                  0 0 25px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .25
+                      ),
+
+                  inset 0 0 35px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .14
+                      );
+          }
+
+          .chip::before {
+
+              content: "";
+
+              position: absolute;
+
+              inset: 14px;
+
+              background:
+
+                  repeating-linear-gradient(
+                      0deg,
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .18
+                      ) 0px,
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .18
+                      ) 2px,
+                      transparent 2px,
+                      transparent 7px
+                  );
+
+              opacity: .8;
+          }
+
+          .chipText {
+
+              position: absolute;
+
+              inset: 0;
+
+              display: flex;
+
+              justify-content: center;
+
+              align-items: center;
+
+              flex-direction: column;
+
+              text-align: center;
+
+              z-index: 2;
+
+              text-shadow:
+
+                  0 0 8px var(--green),
+
+                  0 0 20px var(--green);
+          }
+
+          .chipText strong {
+
+              font-size:
+                  clamp(
+                      24px,
+                      8vw,
+                      42px
+                  );
+
+              letter-spacing: 3px;
+
+              color: #d7ffe9;
+          }
+
+          .chipText small {
+
+              margin-top: 5px;
+
+              color: var(--orange2);
+
+              font-size: 10px;
+
+              letter-spacing: 3px;
+          }
+
+          .pin {
+
+              position: absolute;
+
+              background:
+                  linear-gradient(
+                      90deg,
+                      #75451f,
+                      #ffb35a,
+                      #75451f
+                  );
+
+              box-shadow:
+                  0 0 6px
+                  rgba(
+                      255,
+                      123,
+                      0,
+                      .45
+                  );
+          }
+
+          .pin.top,
+          .pin.bottom {
+
+              width: 65%;
+
+              height: 5px;
+
+              left: 17.5%;
+          }
+
+          .pin.left,
+          .pin.right {
+
+              width: 5px;
+
+              height: 65%;
+
+              top: 17.5%;
+          }
+
+          .pin.top {
+              top: 5%;
+          }
+
+          .pin.bottom {
+              bottom: 5%;
+          }
+
+          .pin.left {
+              left: 5%;
+          }
+
+          .pin.right {
+              right: 5%;
+          }
+
+          .led {
+
+              position: absolute;
+
+              width: 10px;
+
+              height: 10px;
+
+              border-radius: 50%;
+
+              background: var(--green);
+
+              box-shadow:
+
+                  0 0 6px var(--green),
+
+                  0 0 18px var(--green),
+
+                  0 0 30px var(--green);
+
+              animation:
+                  ledBlink
+                  1.15s
+                  ease-in-out
+                  infinite;
+          }
+
+          .led:nth-child(1) {
+              left: 12%;
+              top: 12%;
+          }
+
+          .led:nth-child(2) {
+              right: 12%;
+              top: 12%;
+              animation-delay: .2s;
+          }
+
+          .led:nth-child(3) {
+              left: 12%;
+              bottom: 12%;
+              animation-delay: .4s;
+          }
+
+          .led:nth-child(4) {
+              right: 12%;
+              bottom: 12%;
+              animation-delay: .6s;
+          }
+
+          @keyframes ledBlink {
+
+              0%,
+              100% {
+                  opacity: .25;
+                  transform: scale(.75);
+              }
+
+              50% {
+                  opacity: 1;
+                  transform: scale(1.25);
+              }
+          }
+
+          /* =====================================================
+             BRAIN
+             ===================================================== */
+
+          .brain {
+
+              position: absolute;
+
+              width:
+                  min(
+                      82vw,
+                      390px
+                  );
+
+              height:
+                  min(
+                      82vw,
+                      390px
+                  );
+
+              display: flex;
+
+              justify-content: center;
+
+              align-items: center;
+
+              opacity: 0;
+
+              pointer-events: none;
+
+              transform:
+                  perspective(1000px)
+                  rotateY(var(--rot,0deg))
+                  rotateX(4deg)
+                  scale(.72);
+
+              transform-style:
+                  preserve-3d;
+
+              transition:
+                  opacity .8s ease,
+                  transform .15s ease;
+
+              filter:
+                  drop-shadow(
+                      0 0 22px
+                      rgba(
+                          255,
+                          123,
+                          0,
+                          .35
+                      )
+                  );
+          }
+
+          .brain.show {
+
+              opacity: 1;
+
+              pointer-events: auto;
+
+              transform:
+                  perspective(1000px)
+                  rotateY(var(--rot,0deg))
+                  rotateX(4deg)
+                  scale(1);
+          }
+
+          .brainFrame {
+
+              position: absolute;
+
+              width: 100%;
+
+              height: 100%;
+
+              display: flex;
+
+              justify-content: center;
+
+              align-items: center;
+
+              transform-style:
+                  preserve-3d;
+          }
+
+          .brainGlow {
+
+              position: absolute;
+
+              width: 75%;
+
+              height: 70%;
+
+              border-radius: 50%;
+
+              background:
+
+                  radial-gradient(
+                      ellipse,
+                      rgba(
+                          255,
+                          116,
+                          0,
+                          .26
+                      ),
+                      transparent 67%
+                  );
+
+              filter:
+                  blur(10px);
+
+              animation:
+                  brainGlow 2s
+                  ease-in-out
+                  infinite;
+          }
+
+          @keyframes brainGlow {
+
+              0% {
+                  transform: scale(.92);
+                  opacity: .45;
+              }
+
+              50% {
+                  transform: scale(1.05);
+                  opacity: .9;
+              }
+
+              100% {
+                  transform: scale(.92);
+                  opacity: .45;
+              }
+          }
+
+          .brainSvg {
+
+              width: 100%;
+
+              height: 100%;
+
+              overflow: visible;
+
+              filter:
+                  drop-shadow(
+                      0 0 8px
+                      rgba(
+                          255,
+                          123,
+                          0,
+                          .8
+                      )
+                  );
+          }
+
+          .brainPath {
+
+              fill:
+
+                  url(#brainGradient);
+
+              stroke:
+                  #ff9a32;
+
+              stroke-width: 3;
+
+              stroke-linejoin: round;
+
+              filter:
+                  drop-shadow(
+                      0 0 5px
+                      #ff7b00
+                  );
+          }
+
+          .fold {
+
+              fill: none;
+
+              stroke:
+                  #ffcc8a;
+
+              stroke-width: 3;
+
+              stroke-linecap: round;
+
+              opacity: .9;
+
+              filter:
+                  drop-shadow(
+                      0 0 3px
+                      #ff7b00
+                  );
+          }
+
+          .fold2 {
+
+              fill: none;
+
+              stroke:
+                  #00ffb0;
+
+              stroke-width: 2;
+
+              stroke-linecap: round;
+
+              opacity: .7;
+
+              filter:
+                  drop-shadow(
+                      0 0 4px
+                      #00ff88
+                  );
+          }
+
+          .neuron {
+
+              fill:
+                  #00ff9d;
+
+              filter:
+                  drop-shadow(
+                      0 0 6px
+                      #00ff88
+                  );
+
+              animation:
+                  neuronPulse
+                  1.5s
+                  ease-in-out
+                  infinite;
+          }
+
+          @keyframes neuronPulse {
+
+              0% {
+                  opacity: .3;
+                  r: 2;
+              }
+
+              50% {
+                  opacity: 1;
+                  r: 5;
+              }
+
+              100% {
+                  opacity: .3;
+                  r: 2;
+              }
+          }
+
+          #brainReveal {
+
+              clip-path:
+                  inset(
+                      100% 0 0 0
+                  );
+
+              transition:
+                  clip-path .1s linear;
+          }
+
+          #brainProgress {
+
+              position: absolute;
+
+              left: 16%;
+
+              right: 16%;
+
+              bottom: 7%;
+
+              height: 5px;
+
+              border-radius: 10px;
+
+              background:
+                  rgba(
+                      0,
+                      255,
+                      136,
+                      .12
+                  );
+
+              overflow: hidden;
+
+              box-shadow:
+                  0 0 8px
+                  rgba(
+                      0,
+                      255,
+                      136,
+                      .25
+                  );
+          }
+
+          #brainProgress span {
+
+              display: block;
+
+              width: 0%;
+
+              height: 100%;
+
+              border-radius: 10px;
+
+              background:
+                  linear-gradient(
+                      90deg,
+                      #00ff88,
+                      #ff7b00
+                  );
+
+              box-shadow:
+                  0 0 12px
+                  #00ff88;
+          }
+
+          .message {
+
+              position: absolute;
+
+              z-index: 45;
+
+              left: 7%;
+
+              right: 7%;
+
+              bottom: 12%;
+
+              padding:
+                  15px 18px;
+
+              border-radius: 16px;
+
+              border:
+                  1px solid
+                  rgba(
+                      0,
+                      255,
+                      136,
+                      .45
+                  );
+
+              background:
+                  rgba(
+                      0,
+                      15,
+                      10,
+                      .90
+                  );
+
+              color:
+                  #d9ffed;
+
+              text-align: center;
+
+              font-size: 13px;
+
+              line-height: 1.5;
+
+              opacity: 0;
+
+              transform:
+                  translateY(15px);
+
+              transition:
+                  .4s ease;
+
+              box-shadow:
+
+                  0 0 25px
+                      rgba(
+                          0,
+                          255,
+                          136,
+                          .12
+                      );
+          }
+
+          .message.show {
+
+              opacity: 1;
+
+              transform:
+                  translateY(0);
+          }
+
+          .hint {
+
+              position: absolute;
+
+              z-index: 40;
+
+              bottom: 4%;
+
+              left: 5%;
+
+              right: 5%;
+
+              text-align: center;
+
+              font-size: 9px;
+
+              letter-spacing: .7px;
+
+              color:
+                  rgba(
+                      220,
+                      255,
+                      238,
+                      .55
+                  );
+          }
+
+          .corner {
+
+              position: absolute;
+
+              z-index: 35;
+
+              width: 45px;
+
+              height: 45px;
+
+              border-color:
+                  rgba(
+                      0,
+                      255,
+                      136,
+                      .45
+                  );
+
+              border-style: solid;
+          }
+
+          .corner.tl {
+
+              top: 18%;
+
+              left: 5%;
+
+              border-width:
+                  2px 0 0 2px;
+          }
+
+          .corner.tr {
+
+              top: 18%;
+
+              right: 5%;
+
+              border-width:
+                  2px 2px 0 0;
+          }
+
+          .corner.bl {
+
+              bottom: 14%;
+
+              left: 5%;
+
+              border-width:
+                  0 0 2px 2px;
+          }
+
+          .corner.br {
+
+              bottom: 14%;
+
+              right: 5%;
+
+              border-width:
+                  0 2px 2px 0;
+          }
+
+          </style>
+
+          </head>
+
+          <body>
+
+          <div id="scene">
+
+              <div class="scanlines"></div>
+
+              <div class="topTitle">
+                  CPU UTILITY
+              </div>
+
+              <div
+                  class="status"
+                  id="status">
+                  CPU CORE • STANDBY
+              </div>
+
+              <div class="grid"></div>
+
+              <div class="corner tl"></div>
+              <div class="corner tr"></div>
+              <div class="corner bl"></div>
+              <div class="corner br"></div>
+
+              <div class="stage">
+
+                  <!-- =================================================
+                       CPU
+                       ================================================= -->
+
+                  <div
+                      class="cpu"
+                      id="cpu">
+
+                      <div class="cpu-shell">
+
+                          <div class="pin top"></div>
+                          <div class="pin bottom"></div>
+                          <div class="pin left"></div>
+                          <div class="pin right"></div>
+
+                          <div class="led"></div>
+                          <div class="led"></div>
+                          <div class="led"></div>
+                          <div class="led"></div>
+
+                          <div class="chip">
+
+                              <div class="chipText">
+
+                                  <strong>
+                                      CPU
+                                  </strong>
+
+                                  <small>
+                                      UTILITY CORE
+                                  </small>
+
+                              </div>
+
+                          </div>
+
+                      </div>
+
+                  </div>
+
+
+                  <!-- =================================================
+                       BRAIN
+                       ================================================= -->
+
+                  <div
+                      class="brain"
+                      id="brain">
+
+                      <div class="brainFrame">
+
+                          <div class="brainGlow"></div>
+
+                          <svg
+                              class="brainSvg"
+                              viewBox="0 0 500 400">
+
+                              <defs>
+
+                                  <linearGradient
+                                      id="brainGradient"
+                                      x1="0%"
+                                      y1="0%"
+                                      x2="100%"
+                                      y2="100%">
+
+                                      <stop
+                                          offset="0%"
+                                          stop-color="#ff4b00" />
+
+                                      <stop
+                                          offset="45%"
+                                          stop-color="#ff8b18" />
+
+                                      <stop
+                                          offset="100%"
+                                          stop-color="#57200b" />
+
+                                  </linearGradient>
+
+                              </defs>
+
+                              <g id="brainReveal">
+
+                                  <path
+                                      class="brainPath"
+                                      d="
+                                      M250 63
+                                      C215 34 160 48 142 88
+                                      C100 82 67 111 78 151
+                                      C43 177 53 230 88 245
+                                      C66 286 97 329 138 323
+                                      C159 365 209 357 229 330
+                                      C242 347 258 347 271 330
+                                      C292 359 342 365 363 323
+                                      C404 329 435 286 412 245
+                                      C447 229 457 177 422 151
+                                      C433 111 400 82 358 88
+                                      C340 48 285 34 250 63 Z" />
+
+                                  <path
+                                      class="fold"
+                                      d="
+                                      M152 107
+                                      C183 93 198 113 176 134
+                                      C151 158 185 171 168 194
+                                      C148 221 179 236 161 260
+                                      C147 280 165 300 185 293" />
+
+                                  <path
+                                      class="fold"
+                                      d="
+                                      M348 107
+                                      C317 93 302 113 324 134
+                                      C349 158 315 171 332 194
+                                      C352 221 321 236 339 260
+                                      C353 280 335 300 315 293" />
+
+                                  <path
+                                      class="fold2"
+                                      d="
+                                      M209 81
+                                      C229 65 246 82 234 102
+                                      C222 123 246 138 231 158
+                                      C217 178 239 193 227 213
+                                      C215 232 230 249 221 273" />
+
+                                  <path
+                                      class="fold2"
+                                      d="
+                                      M291 81
+                                      C271 65 254 82 266 102
+                                      C278 123 254 138 269 158
+                                      C283 178 261 193 273 213
+                                      C285 232 270 249 279 273" />
+
+                                  <path
+                                      class="fold"
+                                      d="
+                                      M250 73
+                                      C237 103 264 118 250 144
+                                      C236 170 263 185 250 211
+                                      C237 238 263 256 250 292" />
+
+                                  <path
+                                      class="fold2"
+                                      d="
+                                      M111 157
+                                      C137 142 154 158 137 177
+                                      C119 197 145 213 130 232" />
+
+                                  <path
+                                      class="fold2"
+                                      d="
+                                      M389 157
+                                      C363 142 346 158 363 177
+                                      C381 197 355 213 370 232" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="154"
+                                      cy="125"
+                                      r="3" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="346"
+                                      cy="125"
+                                      r="3" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="115"
+                                      cy="205"
+                                      r="3" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="385"
+                                      cy="205"
+                                      r="3" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="190"
+                                      cy="285"
+                                      r="3" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="310"
+                                      cy="285"
+                                      r="3" />
+
+                                  <circle
+                                      class="neuron"
+                                      cx="250"
+                                      cy="105"
+                                      r="3" />
+
+                              </g>
+
+                          </svg>
+
+                          <div
+                              id="brainProgress">
+
+                              <span></span>
+
+                          </div>
+
+                      </div>
+
+                  </div>
+
+              </div>
+
+              <div
+                  class="message"
+                  id="message">
+
+                  नमस्ते। मैं आपकी मदद के लिए तैयार हूँ।
+                  आप क्या करना चाहते हैं?
+
+              </div>
+
+              <div
+                  class="hint"
+                  id="hint">
+
+                  CPU पर Double Tap करें
+
+              </div>
+
+          </div>
+
+
+          <script>
+
+          const cpu =
+              document.getElementById(
+                  "cpu"
+              );
+
+          const brain =
+              document.getElementById(
+                  "brain"
+              );
+
+          const brainReveal =
+              document.getElementById(
+                  "brainReveal"
+              );
+
+          const progress =
+              document.querySelector(
+                  "#brainProgress span"
+              );
+
+          const status =
+              document.getElementById(
+                  "status"
+              );
+
+          const message =
+              document.getElementById(
+                  "message"
+              );
+
+          const hint =
+              document.getElementById(
+                  "hint"
+              );
+
+
+          let brainOnline = false;
+
+          let revealing = false;
+
+          let rotation = 0;
+
+          let dragging = false;
+
+          let startX = 0;
+
+          let startRotation = 0;
+
+          let moved = false;
+
+          let lastTap = 0;
+
+          let spoken = false;
+
+
+          function androidCall(
+              name,
+              value = ""
+          ) {
+
+              try {
+
+                  if (
+                      window.Android &&
+                      typeof
+                      window.Android[name]
+                      === "function"
+                  ) {
+
+                      window.Android[name](value);
+
+                  }
+
+              } catch (error) {
+
+              }
+
+          }
+
+
+          function vibration() {
+
+              androidCall(
+                  "vibration"
+              );
+          }
+
+
+          /* ==========================================================
+             CPU DOUBLE TAP
+             ========================================================== */
+
+          let cpuLastTap = 0;
+
+          cpu.addEventListener(
+              "pointerup",
+              function(event) {
+
+                  if (revealing) {
+                      return;
+                  }
+
+                  if (moved) {
+                      moved = false;
+                      return;
+                  }
+
+                  const now =
+                      Date.now();
+
+                  if (
+                      now -
+                      cpuLastTap
+                      < 350
+                  ) {
+
+                      cpuLastTap = 0;
+
+                      startBrainBoot();
+
+                  } else {
+
+                      cpuLastTap = now;
+
+                  }
+
+              }
+          );
+
+
+          /* ==========================================================
+             BRAIN 5 SECOND BOOT
+             ========================================================== */
+
+          function startBrainBoot() {
+
+              if (
+                  brainOnline ||
+                  revealing
+              ) {
+                  return;
+              }
+
+              revealing = true;
+
+              vibration();
+
+              status.textContent =
+                  "NEURAL CORE BOOTING • 0%";
+
+              hint.textContent =
+                  "Brain निर्माण हो रहा है...";
+
+              cpu.style.opacity = "0";
+
+              cpu.style.transform =
+                  "scale(.72) rotateX(25deg)";
+
+              cpu.style.pointerEvents =
+                  "none";
+
+              brain.classList.add(
+                  "show"
+              );
+
+              const start =
+                  performance.now();
+
+              const duration =
+                  5000;
+
+
+              function animateBoot(
+                  currentTime
+              ) {
+
+                  const elapsed =
+                      currentTime -
+                      start;
+
+                  const raw =
+                      Math.min(
+                          1,
+                          elapsed /
+                          duration
+                      );
+
+                  /* smooth 5-second easing */
+
+                  const eased =
+                      1 -
+                      Math.pow(
+                          1 - raw,
+                          3
+                      );
+
+                  const percent =
+                      eased * 100;
+
+
+                  brainReveal.style.clipPath =
+                      "inset(" +
+                      (100 - percent) +
+                      "% 0 0 0)";
+
+
+                  progress.style.width =
+                      percent.toFixed(1) +
+                      "%";
+
+
+                  status.textContent =
+                      "NEURAL CORE BOOTING • " +
+                      Math.round(
+                          percent
+                      ) +
+                      "%";
+
+
+                  if (
+                      raw < 1
+                  ) {
+
+                      requestAnimationFrame(
+                          animateBoot
+                      );
+
+                  } else {
+
+                      brainOnline =
+                          true;
+
+                      revealing =
+                          false;
+
+                      brainReveal.style.clipPath =
+                          "inset(0% 0 0 0)";
+
+                      progress.style.width =
+                          "100%";
+
+                      status.textContent =
+                          "BRAIN ONLINE • ±90°";
+
+                      hint.textContent =
+                          "Brain को बाएँ/दाएँ drag करें • ±90° • Double Tap";
+
+                      vibration();
+
+                  }
+
+              }
+
+
+              requestAnimationFrame(
+                  animateBoot
+              );
+          }
+
+
+          /* ==========================================================
+             BRAIN 3D LEFT / RIGHT ROTATION
+             ========================================================== */
+
+          brain.addEventListener(
+              "pointerdown",
+              function(event) {
+
+                  if (
+                      !brainOnline
+                  ) {
+                      return;
+                  }
+
+                  dragging = true;
+
+                  moved = false;
+
+                  startX =
+                      event.clientX;
+
+                  startRotation =
+                      rotation;
+
+                  brain.setPointerCapture?.(
+                      event.pointerId
+                  );
+
+              }
+          );
+
+
+          brain.addEventListener(
+              "pointermove",
+              function(event) {
+
+                  if (
+                      !dragging ||
+                      !brainOnline
+                  ) {
+                      return;
+                  }
+
+                  const dx =
+                      event.clientX -
+                      startX;
+
+                  if (
+                      Math.abs(dx) > 5
+                  ) {
+
+                      moved = true;
+
+                  }
+
+                  /*
+                     Rotation limited
+                     to -90 and +90
+                  */
+
+                  rotation =
+                      Math.max(
+                          -90,
+                          Math.min(
+                              90,
+                              startRotation +
+                              dx * 0.55
+                          )
+                      );
+
+                  brain.style.setProperty(
+                      "--rot",
+                      rotation + "deg"
+                  );
+
+              }
+          );
+
+
+          brain.addEventListener(
+              "pointerup",
+              function() {
+
+                  dragging = false;
+
+              }
+          );
+
+
+          brain.addEventListener(
+              "pointercancel",
+              function() {
+
+                  dragging = false;
+
+              }
+          );
+
+
+          /* ==========================================================
+             BRAIN DOUBLE TAP
+             ========================================================== */
+
+          brain.addEventListener(
+              "pointerup",
+              function(event) {
+
+                  if (
+                      !brainOnline ||
+                      moved
+                  ) {
+                      return;
+                  }
+
+                  const now =
+                      Date.now();
+
+                  if (
+                      now -
+                      lastTap
+                      < 350
+                  ) {
+
+                      lastTap = 0;
+
+                      speakAssistant();
+
+                  } else {
+
+                      lastTap = now;
+
+                  }
+
+              }
+          );
+
+
+          function speakAssistant() {
+
+              if (spoken) {
+                  return;
+              }
+
+              spoken = true;
+
+              status.textContent =
+                  "ASSIST MODE READY";
+
+              message.classList.add(
+                  "show"
+              );
+
+              vibration();
+
+              androidCall(
+                  "speak",
+                  "नमस्ते। मैं आपकी मदद के लिए तैयार हूँ। आप क्या करना चाहते हैं?"
+              );
+
+
+              setTimeout(
+                  function() {
+
+                      spoken = false;
+
+                  },
+                  5000
+              );
+
+          }
+
+
+          /* ==========================================================
+             BACKGROUND NEURAL MOTION
+             ========================================================== */
+
+          let pulseAngle = 0;
+
+          function ambientAnimation() {
+
+              pulseAngle += 0.02;
+
+              if (
+                  brainOnline &&
+                  !dragging
+              ) {
+
+                  /*
+                     बहुत हल्का cinematic
+                     breathing effect
+                  */
+
+                  const breathing =
+                      Math.sin(
+                          pulseAngle
+                      ) * 1.2;
+
+                  brain.style.filter =
+                      "drop-shadow(0 0 " +
+                      (22 +
+                          breathing) +
+                      "px rgba(255,123,0,.38))";
+              }
+
+              requestAnimationFrame(
+                  ambientAnimation
+              );
+          }
+
+          ambientAnimation();
+
+
+          /* ==========================================================
+             PREVENT LONG-PRESS MENU
+             ========================================================== */
+
+          document.addEventListener(
+              "contextmenu",
+              function(event) {
+
+                  event.preventDefault();
+
+              }
+          );
+
+
+          </script>
+
+          </body>
+
+          </html>
+          EOF
+
+
+      # =========================================================
+      # 16 - VERIFY NO OLD NOTICE CODE
+      # =========================================================
+      - name: 16 - Verify CPU Utility Project
+        run: |
+          set -euo pipefail
+
+          echo "========================================="
+          echo "CPU Utility Project Verification"
+          echo "========================================="
+
+          grep -R "com.cpuutility.app" app
+          grep -R "CPU Utility" app
+
+          if grep -R "com.zeeshan.notice" app; then
+              echo "ERROR: Old Zeeshan Notice package found!"
+              exit 1
+          fi
+
+          if grep -R "Zeeshan Notice" app; then
+              echo "ERROR: Old Zeeshan Notice text found!"
+              exit 1
+          fi
+
+          echo "Old Notice app removed successfully."
+          echo "CPU Utility project is ready."
+
+
+      # =========================================================
+      # 17 - BUILD APK
+      # =========================================================
+      - name: 17 - Build CPU Utility Debug APK
+        run: |
+          set -euo pipefail
+
+          gradle :app:assembleDebug --no-daemon
+
+          test -f app/build/outputs/apk/debug/app-debug.apk
+
+          echo "APK BUILD SUCCESSFUL"
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+
+      # =========================================================
+      # 18 - RENAME APK
+      # =========================================================
+      - name: 18 - Rename APK
+        run: |
+          cp \
+            app/build/outputs/apk/debug/app-debug.apk \
+            app/build/outputs/apk/debug/CPU-Utility.apk
+
+          ls -lh \
+            app/build/outputs/apk/debug/CPU-Utility.apk
+
+
+      # =========================================================
+      # 19 - UPLOAD APK
+      # =========================================================
+      - name: 19 - Upload CPU Utility APK
         uses: actions/upload-artifact@v4
         with:
-          name: Hyper-3D-Brain-AI-APK
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 7
-
+          name: CPU-Utility-APK
+          path: app/build/outputs/apk/debug/CPU-Utility.apk
+          if-no-files-found: error

@@ -168,7 +168,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Create Custom View Code for CPU Drawing
           cat > app/src/main/java/com/zeeshan/cpuengine/CpuDisplayView.kt <<'EOF'
           package com.zeeshan.cpuengine
 
@@ -227,7 +226,7 @@ jobs:
                   val w = width.toFloat()
                   val h = height.toFloat()
 
-                  // 1. Circuit Background Lines
+                  // Circuit Background
                   canvas.drawRect(0f, 0f, w, h, bgPaint)
                   for (i in 0..10) {
                       val yPos = h * (i / 10f)
@@ -236,14 +235,14 @@ jobs:
                       canvas.drawLine(xPos, 0f, xPos, h, circuitPaint)
                   }
 
-                  // 2. CPU Base Body (Square)
+                  // CPU Base Body
                   val cpuSize = w.coerceAtMost(h) * 0.65f
                   val left = (w - cpuSize) / 2f
                   val top = (h - cpuSize) / 2f
                   val right = left + cpuSize
                   val bottom = top + cpuSize
 
-                  // Pins around CPU
+                  // CPU Pins
                   for (p in 0..15) {
                       val offset = cpuSize * (p / 15f)
                       canvas.drawLine(left + offset, top - 20f, left + offset, top, pinPaint)
@@ -259,27 +258,25 @@ jobs:
                   val margin = cpuSize * 0.08f
                   canvas.drawRoundRect(left + margin, top + margin, right - margin, bottom - margin, 16f, 16f, cpuCorePaint)
 
-                  // 3. Eyes (Serious/Official Look - Dual Camera Lens style)
+                  // Eyes
                   val centerY = top + cpuSize * 0.45f
                   val eyeRadius = cpuSize * 0.12f
                   val leftEyeX = left + cpuSize * 0.33f
                   val rightEyeX = left + cpuSize * 0.67f
 
-                  // Glow & Lenses
                   canvas.drawCircle(leftEyeX, centerY, eyeRadius, eyeGlowPaint)
                   canvas.drawCircle(rightEyeX, centerY, eyeRadius, eyeGlowPaint)
 
                   canvas.drawCircle(leftEyeX, centerY, eyeRadius * 0.5f, eyeInnerPaint)
                   canvas.drawCircle(rightEyeX, centerY, eyeRadius * 0.5f, eyeInnerPaint)
 
-                  // 4. Text on CPU
+                  // Text
                   canvas.drawText("INTELLECTUS", w / 2f, top + cpuSize * 0.72f, textPaint)
                   canvas.drawText("CPU PROFESSOR", w / 2f, top + cpuSize * 0.82f, textPaint)
               }
           }
           EOF
 
-          # Layout with Plain Header, Plain Footer, and CPU View in Middle
           cat > app/src/main/res/layout/activity_main.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -288,19 +285,16 @@ jobs:
               android:background="#050B10"
               android:orientation="vertical">
 
-              <!-- Plain Header Strip -->
               <View
                   android:layout_width="match_parent"
                   android:layout_height="60dp"
                   android:background="#0A121D" />
 
-              <!-- Main Display (Background + CPU Chip) -->
               <com.zeeshan.cpuengine.CpuDisplayView
                   android:layout_width="match_parent"
                   android:layout_height="0dp"
                   android:layout_weight="1" />
 
-              <!-- Plain Footer Strip -->
               <View
                   android:layout_width="match_parent"
                   android:layout_height="60dp"
@@ -335,7 +329,7 @@ jobs:
           EOF
 
       # =========================================================================
-      # STEP 4: MainActivity Setup
+      # STEP 4: MainActivity Setup (Fixed Syntax)
       # =========================================================================
       - name: Write Kotlin MainActivity
         run: |
@@ -347,7 +341,7 @@ jobs:
 
           class MainActivity : AppCompatActivity() {
 
-              companion {
+              companion object {
                   init {
                       System.loadLibrary("zeeshan_cpu_engine")
                   }
@@ -359,7 +353,6 @@ jobs:
                   super.onCreate(savedInstanceState)
                   setContentView(R.layout.activity_main)
 
-                  // Initialize C++ Core Engine
                   nativeInitEngine()
               }
           }

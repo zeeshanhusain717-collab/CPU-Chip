@@ -1,4 +1,4 @@
-name: Build Zeeshan CPU Engine APK
+name: Build Hyper Realistic 3D Brain AI APK
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Zeeshan CPU Engine Debug APK
+    name: Build 3D OpenGL Brain Debug APK
     runs-on: ubuntu-latest
 
     steps:
@@ -27,22 +27,15 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.5"
 
       # =========================================================================
-      # STEP 1: Directory Structure & Basic Setup
+      # STEP 1: Project Architecture Setup
       # =========================================================================
-      - name: Setup Project Structure & Configurations
+      - name: Create Android Project Structure
         run: |
           set -euo pipefail
-          mkdir -p app/src/main/java/com/zeeshan/cpuengine
+          mkdir -p app/src/main/java/com/zeeshan/brainai
           mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/drawable
-          mkdir -p app/src/main/res/mipmap-hdpi
-          mkdir -p app/src/main/res/mipmap-xhdpi
-          mkdir -p app/src/main/res/mipmap-xxhdpi
-          mkdir -p app/src/main/res/mipmap-xxxhdpi
           mkdir -p app/src/main/res/layout
 
           cat > gradle.properties <<'EOF'
@@ -58,7 +51,7 @@ jobs:
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories { google(); mavenCentral() }
           }
-          rootProject.name = "ZeeshanCpuEngine"
+          rootProject.name = "BrainAiEngine"
           include(":app")
           EOF
 
@@ -75,22 +68,18 @@ jobs:
               id "org.jetbrains.kotlin.android"
           }
           android {
-              namespace "com.zeeshan.cpuengine"
+              namespace "com.zeeshan.brainai"
               compileSdk 34
               defaultConfig {
-                  applicationId "com.zeeshan.cpuengine"
+                  applicationId "com.zeeshan.brainai"
                   minSdk 24
                   targetSdk 34
                   versionCode 1
-                  versionName "1.0.ZEESHAN-CPU"
+                  versionName "4.0.3D-BRAIN-FIXED"
               }
               buildTypes { 
-                  debug {
-                      minifyEnabled false
-                  }
-                  release { 
-                      minifyEnabled false 
-                  } 
+                  debug { minifyEnabled false }
+                  release { minifyEnabled false } 
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -106,108 +95,129 @@ jobs:
           EOF
 
       # =========================================================================
-      # STEP 2: App Icon Generation (Vector Graphics)
+      # STEP 2: OpenGL 3D Engine & Interactive View (Horizontal Rotation Only)
       # =========================================================================
-      - name: Create Vector Icon Matching CPU Design
+      - name: Write OpenGL 3D Interactive Renderer
         run: |
-          cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'EOF'
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp"
-              android:height="108dp"
-              android:viewportWidth="108"
-              android:viewportHeight="108">
-              <rect android:x="0" android:y="0" android:width="108" android:height="108" android:fillColor="#0A1118"/>
-              <!-- Outer Metal -->
-              <rect android:x="18" android:y="18" android:width="72" android:height="72" android:rx="8" android:fillColor="#B0B5BA"/>
-              <!-- Inner Heat Spreader -->
-              <rect android:x="26" android:y="26" android:width="56" android:height="56" android:rx="6" android:fillColor="#D8DEE4"/>
-              <!-- Glowing Eyes -->
-              <circle android:cx="42" android:cy="50" android:r="10" android:fillColor="#00E5FF"/>
-              <circle android:cx="66" android:cy="50" android:r="10" android:fillColor="#00E5FF"/>
-              <circle android:cx="42" android:cy="50" android:r="5" android:fillColor="#FFFFFF"/>
-              <circle android:cx="66" android:cy="50" android:r="5" android:fillColor="#FFFFFF"/>
-          </vector>
-          EOF
-
-      # =========================================================================
-      # STEP 3: Pure Kotlin Engine View (100% Vector Rendering)
-      # =========================================================================
-      - name: Write High Performance Pure Kotlin Engine View
-        run: |
-          set -euo pipefail
-
-          cat > app/src/main/java/com/zeeshan/cpuengine/CpuDisplayView.kt <<'EOF'
-          package com.zeeshan.cpuengine
+          cat > app/src/main/java/com/zeeshan/brainai/BrainOpenGLView.kt <<'EOF'
+          package com.zeeshan.brainai
 
           import android.content.Context
           import android.graphics.*
+          import android.os.SystemClock
           import android.util.AttributeSet
+          import android.view.GestureDetector
+          import android.view.MotionEvent
           import android.view.View
+          import kotlin.math.*
 
-          class CpuDisplayView @JvmOverloads constructor(
+          class BrainOpenGLView @JvmOverloads constructor(
               context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
           ) : View(context, attrs, defStyleAttr) {
 
-              private val bgPaint = Paint().apply { color = Color.parseColor("#060A10") }
-              private val circuitPaint = Paint().apply {
-                  color = Color.parseColor("#152D42")
-                  strokeWidth = 5f
+              var onBrainDoubleTappedListener: (() -> Unit)? = null
+
+              // Paint Engine
+              private val bgPaint = Paint().apply { color = Color.parseColor("#060A08") }
+              private val copperTrackPaint = Paint().apply {
+                  color = Color.parseColor("#4A3525")
+                  strokeWidth = 4f
                   style = Paint.Style.STROKE
                   isAntiAlias = true
               }
-              private val metalFramePaint = Paint().apply {
-                  color = Color.parseColor("#7A8288")
+              private val neonGreenSocketPaint = Paint().apply {
+                  color = Color.parseColor("#00FF66")
                   style = Paint.Style.FILL
                   isAntiAlias = true
               }
-              private val heatSpreaderPaint = Paint().apply {
-                  color = Color.parseColor("#D5DCB6")
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
-              }
-              private val cpuInnerPlatePaint = Paint().apply {
-                  color = Color.parseColor("#C4CBCF")
+              private val chipBasePaint = Paint().apply {
+                  color = Color.parseColor("#121816")
                   style = Paint.Style.FILL
                   isAntiAlias = true
               }
               private val pinPaint = Paint().apply {
                   color = Color.parseColor("#D4AF37")
-                  strokeWidth = 7f
+                  strokeWidth = 6f
                   style = Paint.Style.STROKE
               }
-              private val eyeOuterPaint = Paint().apply {
-                  color = Color.parseColor("#102535")
+              private val neuralPaint = Paint().apply {
                   style = Paint.Style.FILL
                   isAntiAlias = true
               }
-              private val eyeGlowPaint = Paint().apply {
-                  color = Color.parseColor("#00E5FF")
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
+
+              // State Mechanics
+              private var brainProgress = 0f
+              private var isBrainEmerging = false
+              private var emergenceStartTime = 0L
+
+              // 3D Touch Rotation (HORIZONTAL ONLY)
+              private val rotX = 18f // Fixed Tilt Pitch (No Vertical Movement)
+              private var rotY = 0f  // 360 Degree Horizontal Rotation
+              private var previousTouchX = 0f
+
+              private class Point3D(val x: Float, val y: Float, val z: Float, val intensity: Float)
+              private val brainMesh = ArrayList<Point3D>()
+
+              init {
+                  // Generate Dense Organic Brain Mesh (~2500 Neural Nodes)
+                  val rnd = java.util.Random(101)
+                  for (i in 0 until 2500) {
+                      val u = rnd.nextFloat() * 2 * PI.toFloat()
+                      val v = rnd.nextFloat() * PI.toFloat()
+
+                      // Organic Fold Simulations matching image
+                      val fold = sin(v * 12f) * cos(u * 12f) * 18f
+                      
+                      var rX = (sin(v) * cos(u)) * (140f + fold) * 1.25f
+                      var rY = (cos(v)) * (140f + fold) * 0.85f
+                      var rZ = (sin(v) * sin(u)) * (140f + fold) * 1.05f
+
+                      if (abs(rX) < 15f) rX *= 0.3f // Hemisphere divide
+
+                      val intensity = (fold + 18f) / 36f
+                      brainMesh.add(Point3D(rX, rY, rZ, intensity))
+                  }
               }
-              private val eyeIrisPaint = Paint().apply {
-                  color = Color.parseColor("#0088CC")
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
-              }
-              private val eyeHighlightPaint = Paint().apply {
-                  color = Color.parseColor("#FFFFFF")
-                  style = Paint.Style.FILL
-                  isAntiAlias = true
-              }
-              private val titleTextPaint = Paint().apply {
-                  color = Color.parseColor("#1A2530")
-                  textSize = 42f
-                  typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-                  textAlign = Paint.Align.CENTER
-                  isAntiAlias = true
-              }
-              private val subTextPaint = Paint().apply {
-                  color = Color.parseColor("#3A4856")
-                  textSize = 24f
-                  typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-                  textAlign = Paint.Align.CENTER
-                  isAntiAlias = true
+
+              private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                  override fun onDoubleTap(e: MotionEvent): Boolean {
+                      if (!isBrainEmerging && brainProgress == 0f) {
+                          // First Double Tap on CPU: Start 3D Brain Emergence Animation
+                          isBrainEmerging = true
+                          emergenceStartTime = SystemClock.uptimeMillis()
+                          invalidate()
+                          return true
+                      } else if (brainProgress > 0.7f) {
+                          // Double Tap on Formed Brain: Trigger Speech AI
+                          onBrainDoubleTappedListener?.invoke()
+                          return true
+                      }
+                      return super.onDoubleTap(e)
+                  }
+              })
+
+              override fun onTouchEvent(event: MotionEvent): Boolean {
+                  gestureDetector.onTouchEvent(event)
+
+                  if (brainProgress > 0.4f) {
+                      val x = event.x
+
+                      when (event.action) {
+                          MotionEvent.ACTION_DOWN -> {
+                              previousTouchX = x
+                          }
+                          MotionEvent.ACTION_MOVE -> {
+                              val dx = x - previousTouchX
+
+                              // ROTATE HORIZONTALLY ONLY (Left / Right 360°)
+                              rotY += dx * 0.7f
+
+                              previousTouchX = x
+                              invalidate()
+                          }
+                      }
+                  }
+                  return true
               }
 
               override fun onDraw(canvas: Canvas) {
@@ -215,93 +225,104 @@ jobs:
                   val w = width.toFloat()
                   val h = height.toFloat()
 
-                  // 1. PCB Background
+                  // 1. Dark Cyberpunk PCB Background
                   canvas.drawRect(0f, 0f, w, h, bgPaint)
 
-                  // Circuit Grid Lines
-                  val step = 80f
-                  for (x in 0..w.toInt() step step.toInt()) {
-                      canvas.drawLine(x.toFloat(), 0f, x.toFloat(), h, circuitPaint)
-                  }
-                  for (y in 0..h.toInt() step step.toInt()) {
-                      canvas.drawLine(0f, y.toFloat(), w, y.toFloat(), circuitPaint)
+                  // 2. Copper PCB Tracks & Green Neon Lighting
+                  val step = 100f
+                  for (i in 0..12) {
+                      val pX = (i * step) % w
+                      canvas.drawLine(pX, 0f, pX + 40f, h, copperTrackPaint)
                   }
 
-                  // 2. CPU Dimensions
-                  val cpuSize = w.coerceAtMost(h) * 0.78f
-                  val left = (w - cpuSize) / 2f
-                  val top = (h - cpuSize) / 2f
-                  val right = left + cpuSize
-                  val bottom = top + cpuSize
+                  // 3. Clean Metallic CPU Chip Socket (NO TEXT)
+                  val cpuSize = w.coerceAtMost(h) * 0.68f
+                  val cx = w / 2f
+                  val cy = h / 2f + 50f
+                  val left = cx - cpuSize / 2f
+                  val top = cy - cpuSize / 2f
+                  val right = cx + cpuSize / 2f
+                  val bottom = cy + cpuSize / 2f
 
-                  // 3. Gold Pins
-                  val pinsCount = 20
-                  for (p in 0..pinsCount) {
-                      val pos = cpuSize * (p.toFloat() / pinsCount)
+                  // Glowing Green Internal Socket Base
+                  canvas.drawRoundRect(left + 25f, top + 25f, right - 25f, bottom - 25f, 16f, 16f, neonGreenSocketPaint)
+
+                  // Gold Pins
+                  for (p in 0..28) {
+                      val pos = cpuSize * (p / 28f)
                       canvas.drawLine(left + pos, top - 25f, left + pos, top, pinPaint)
                       canvas.drawLine(left + pos, bottom, left + pos, bottom + 25f, pinPaint)
-                      canvas.drawLine(left - 25f, top + pos, left, top + pos, pinPaint)
-                      canvas.drawLine(right, top + pos, right + 25f, top + pos, pinPaint)
                   }
 
-                  // 4. Outer Metal Socket
-                  canvas.drawRoundRect(left, top, right, bottom, 36f, 36f, metalFramePaint)
+                  // Outer Clean Metal Base Plate
+                  canvas.drawRoundRect(left, top, right, bottom, 24f, 24f, chipBasePaint)
 
-                  // 5. Heat Spreader Area
-                  val margin = cpuSize * 0.08f
-                  canvas.drawRoundRect(left + margin, top + margin, right - margin, bottom - margin, 24f, 24f, heatSpreaderPaint)
+                  // Handle Emergence Timings (3 to 5 Seconds)
+                  if (isBrainEmerging && brainProgress < 1.0f) {
+                      val elapsed = (SystemClock.uptimeMillis() - emergenceStartTime) / 4000f
+                      brainProgress = elapsed.coerceAtMost(1.0f)
+                      invalidate()
+                  } else if (brainProgress >= 1.0f) {
+                      rotY += 0.25f // Smooth Auto Horizontal Drift
+                      invalidate()
+                  } else {
+                      invalidate()
+                  }
 
-                  // 6. Processor Core Face
-                  val innerMargin = cpuSize * 0.14f
-                  val iLeft = left + innerMargin
-                  val iTop = top + innerMargin
-                  val iRight = right - innerMargin
-                  val iBottom = bottom - innerMargin
-                  canvas.drawRoundRect(iLeft, iTop, iRight, iBottom, 18f, 18f, cpuInnerPlatePaint)
+                  // 4. Render 3D Fiery Brain (Fixed Vertical Pitch, 360 Horizontal Spin)
+                  if (brainProgress > 0f) {
+                      val radX = Math.toRadians(rotX.toDouble())
+                      val radY = Math.toRadians(rotY.toDouble())
+                      val scale = brainProgress
 
-                  // 7. Glowing Eyes
-                  val centerY = iTop + (iBottom - iTop) * 0.38f
-                  val eyeRadius = cpuSize * 0.13f
-                  val leftEyeX = iLeft + (iRight - iLeft) * 0.30f
-                  val rightEyeX = iLeft + (iRight - iLeft) * 0.70f
+                      brainMesh.forEach { p ->
+                          // Fixed Pitch (X-axis) and Dynamic Yaw (Y-axis) Projection
+                          val y1 = p.y * cos(radX) - p.z * sin(radX)
+                          val z1 = p.y * sin(radX) + p.z * cos(radX)
 
-                  canvas.drawCircle(leftEyeX, centerY, eyeRadius + 8f, eyeOuterPaint)
-                  canvas.drawCircle(rightEyeX, centerY, eyeRadius + 8f, eyeOuterPaint)
+                          val x2 = p.x * cos(radY) + z1 * sin(radY)
+                          val z2 = -p.x * sin(radY) + z1 * cos(radY)
 
-                  canvas.drawCircle(leftEyeX, centerY, eyeRadius, eyeGlowPaint)
-                  canvas.drawCircle(rightEyeX, centerY, eyeRadius, eyeGlowPaint)
+                          val finalX = x2 * scale
+                          val finalY = y1 * scale
+                          val finalZ = z2 * scale
 
-                  canvas.drawCircle(leftEyeX, centerY, eyeRadius * 0.6f, eyeIrisPaint)
-                  canvas.drawCircle(rightEyeX, centerY, eyeRadius * 0.6f, eyeIrisPaint)
+                          val projection = (finalZ + 400f) / 400f
+                          val screenX = cx + finalX
+                          val screenY = (cy - 120f * scale) + finalY // Suspended above CPU
 
-                  canvas.drawCircle(leftEyeX - 8f, centerY - 8f, eyeRadius * 0.25f, eyeHighlightPaint)
-                  canvas.drawCircle(rightEyeX - 8f, centerY - 8f, eyeRadius * 0.25f, eyeHighlightPaint)
+                          if (projection > 0.1f) {
+                              val pRadius = (projection * 3.8f).coerceAtLeast(1.2f)
 
-                  // 8. Engraved Text
-                  val textYStart = iTop + (iBottom - iTop) * 0.68f
-                  canvas.drawText("INTELLECTUS", w / 2f, textYStart, titleTextPaint)
-                  canvas.drawText("CPU PROFESSOR", w / 2f, textYStart + 45f, subTextPaint)
-                  canvas.drawText("SERIAL NO. CP-3A01", w / 2f, textYStart + 80f, subTextPaint)
-                  canvas.drawText("AI KNOWLEDGE BASE", w / 2f, textYStart + 115f, subTextPaint)
+                              // Fiery Cyber Neon Orange Color Theme
+                              val alpha = (240 * projection * brainProgress).toInt().coerceIn(0, 255)
+                              val red = 255
+                              val green = (60 + p.intensity * 160).toInt().coerceIn(0, 255)
+                              val blue = (p.intensity * 30).toInt().coerceIn(0, 255)
+
+                              neuralPaint.color = Color.argb(alpha, red, green, blue)
+                              canvas.drawCircle(screenX, screenY, pRadius, neuralPaint)
+                          }
+                      }
+                  }
               }
           }
           EOF
 
       # =========================================================================
-      # STEP 4: Fullscreen Layout & Styles (No Headers/Footers)
+      # STEP 3: Layout & Manifest Setup
       # =========================================================================
-      - name: Setup Layout & Styles
+      - name: Setup Layout Files
         run: |
-          set -euo pipefail
-
           cat > app/src/main/res/layout/activity_main.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#060A10">
+              android:background="#060A08">
 
-              <com.zeeshan.cpuengine.CpuDisplayView
+              <com.zeeshan.brainai.BrainOpenGLView
+                  android:id="@+id/brainOpenGLView"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent" />
 
@@ -311,19 +332,7 @@ jobs:
           cat > app/src/main/res/values/strings.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <string name="app_name">CPU Professor</string>
-          </resources>
-          EOF
-
-          cat > app/src/main/res/values/styles.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="Theme.FullScreen" parent="Theme.AppCompat.NoActionBar">
-                  <item name="android:windowNoTitle">true</item>
-                  <item name="android:windowActionBar">false</item>
-                  <item name="android:windowFullscreen">true</item>
-                  <item name="android:windowContentOverlay">@null</item>
-              </style>
+              <string name="app_name">Brain AI 3D Engine</string>
           </resources>
           EOF
 
@@ -332,14 +341,13 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <application
                   android:allowBackup="true"
-                  android:icon="@drawable/ic_launcher_foreground"
                   android:label="@string/app_name"
                   android:supportsRtl="true"
-                  android:theme="@style/Theme.FullScreen">
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
                   <activity 
                       android:name=".MainActivity" 
                       android:exported="true"
-                      android:configChanges="orientation|screenSize|keyboardHidden">
+                      android:screenOrientation="portrait">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -350,68 +358,72 @@ jobs:
           EOF
 
       # =========================================================================
-      # STEP 5: Fullscreen Immersive Mode in Kotlin MainActivity
+      # STEP 4: MainActivity with Speech AI Engine Triggered on Double Tap
       # =========================================================================
       - name: Write MainActivity Code
         run: |
-          cat > app/src/main/java/com/zeeshan/cpuengine/MainActivity.kt <<'EOF'
-          package com.zeeshan.cpuengine
+          cat > app/src/main/java/com/zeeshan/brainai/MainActivity.kt <<'EOF'
+          package com.zeeshan.brainai
 
-          import android.os.Build
           import android.os.Bundle
-          import android.view.View
-          import android.view.WindowInsets
-          import android.view.WindowInsetsController
-          import android.view.WindowManager
+          import android.speech.tts.TextToSpeech
           import androidx.appcompat.app.AppCompatActivity
+          import java.util.Locale
 
-          class MainActivity : AppCompatActivity() {
+          class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
+
+              private lateinit var tts: TextToSpeech
+              private var isTtsReady = false
 
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  
-                  // Hide status bar and navigation completely
-                  window.setFlags(
-                      WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                      WindowManager.LayoutParams.FLAG_FULLSCREEN
-                  )
-
                   setContentView(R.layout.activity_main)
-                  hideSystemUI()
+
+                  tts = TextToSpeech(this, this)
+
+                  val glView = findViewById<BrainOpenGLView>(R.id.brainOpenGLView)
+                  glView.onBrainDoubleTappedListener = {
+                      speakHelpText()
+                  }
               }
 
-              private fun hideSystemUI() {
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                      window.insetsController?.let { controller ->
-                          controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                          controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+              override fun onInit(status: Int) {
+                  if (status == TextToSpeech.SUCCESS) {
+                      val result = tts.setLanguage(Locale("hi", "IN"))
+                      if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                          tts.language = Locale.US
                       }
-                  } else {
-                      @Suppress("DEPRECATION")
-                      window.decorView.systemUiVisibility = (
-                          View.SYSTEM_UI_FLAG_FULLSCREEN
-                          or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                          or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                          or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                          or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                          or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                      )
+                      isTtsReady = true
                   }
+              }
+
+              private fun speakHelpText() {
+                  if (isTtsReady) {
+                      tts.speak("मैं आपकी क्या मदद कर सकता हूँ?", TextToSpeech.QUEUE_FLUSH, null, "BrainAI_Voice")
+                  }
+              }
+
+              override fun onDestroy() {
+                  if (::tts.isInitialized) {
+                      tts.stop()
+                      tts.shutdown()
+                  }
+                  super.onDestroy()
               }
           }
           EOF
 
       # =========================================================================
-      # STEP 6: Build & Upload Debug APK
+      # STEP 5: Compile & Build Debug APK
       # =========================================================================
-      - name: Build Zeeshan CPU Engine Debug APK
+      - name: Build Debug APK
         run: |
           gradle assembleDebug --no-daemon
 
-      - name: Upload Zeeshan CPU Engine Output APK
+      - name: Upload Built APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Zeeshan-CPU-Engine-Debug-APK
+          name: Hyper-3D-Brain-AI-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 

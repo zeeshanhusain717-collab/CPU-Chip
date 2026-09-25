@@ -1,11 +1,10 @@
-name: Build CPU Utility APK
+name: Build Z Plus Security 3D APK
 
 on:
   push:
     branches:
       - main
       - master
-
   workflow_dispatch:
 
 permissions:
@@ -13,20 +12,20 @@ permissions:
 
 jobs:
   build:
-    name: Build CPU Utility Android APK
+    name: Build Z Plus Security Android APK
     runs-on: ubuntu-latest
 
     steps:
 
       # =========================================================
-      # 01 - CHECKOUT
+      # 01 - CHECKOUT REPOSITORY
       # =========================================================
       - name: 01 - Checkout Repository
         uses: actions/checkout@v4
 
 
       # =========================================================
-      # 02 - JAVA 17
+      # 02 - SETUP JAVA 17
       # =========================================================
       - name: 02 - Setup Java 17
         uses: actions/setup-java@v4
@@ -36,7 +35,7 @@ jobs:
 
 
       # =========================================================
-      # 03 - GRADLE
+      # 03 - SETUP GRADLE 8.5
       # =========================================================
       - name: 03 - Setup Gradle 8.5
         uses: gradle/actions/setup-gradle@v4
@@ -45,24 +44,20 @@ jobs:
 
 
       # =========================================================
-      # 04 - CLEAN OLD NOTICE APP COMPLETELY
+      # 04 - CLEAN & CREATE DIRECTORY STRUCTURE
       # =========================================================
-      - name: 04 - Remove Old Zeeshan Notice App
+      - name: 04 - Setup Directory Tree
         run: |
           set -euo pipefail
 
-          rm -rf app
-          rm -rf .gradle
+          rm -rf app .gradle settings.gradle build.gradle gradle.properties
 
-          rm -f settings.gradle
-          rm -f build.gradle
-          rm -f gradle.properties
-
-          mkdir -p app/src/main/java/com/cpuutility/app
+          mkdir -p app/src/main/java/com/zplussecurity/app
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
           mkdir -p app/src/main/res/mipmap-hdpi
           mkdir -p app/src/main/res/mipmap-mdpi
           mkdir -p app/src/main/res/mipmap-xhdpi
@@ -99,15 +94,13 @@ jobs:
 
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-
               repositories {
                   google()
                   mavenCentral()
               }
           }
 
-          rootProject.name = "CPUUtility"
-
+          rootProject.name = "ZPlusSecurity"
           include(":app")
           EOF
 
@@ -128,7 +121,7 @@ jobs:
       # =========================================================
       # 08 - APP BUILD GRADLE
       # =========================================================
-      - name: 08 - Create CPU Utility App Gradle
+      - name: 08 - Create App Build Gradle
         run: |
           cat > app/build.gradle <<'EOF'
           plugins {
@@ -137,25 +130,21 @@ jobs:
           }
 
           android {
-              namespace "com.cpuutility.app"
-
+              namespace "com.zplussecurity.app"
               compileSdk 34
 
               defaultConfig {
-                  applicationId "com.cpuutility.app"
-
+                  applicationId "com.zplussecurity.app"
                   minSdk 26
                   targetSdk 34
-
                   versionCode 1
-                  versionName "1.0"
+                  versionName "1.0.0"
               }
 
               buildTypes {
                   debug {
                       minifyEnabled false
                   }
-
                   release {
                       minifyEnabled false
                   }
@@ -174,363 +163,363 @@ jobs:
           dependencies {
               implementation "androidx.core:core-ktx:1.13.1"
               implementation "androidx.appcompat:appcompat:1.7.0"
+              implementation "com.google.android.material:material:1.12.0"
+              implementation "org.json:json:20240303"
           }
           EOF
 
 
       # =========================================================
-      # 09 - COLORS
+      # 09 - VALUES & APP ICON DRAWABLES
       # =========================================================
-      - name: 09 - Create Colors
+      - name: 09 - Create App Icons & Resource Files
         run: |
+          # Colors
           cat > app/src/main/res/values/colors.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-
               <color name="black">#000000</color>
-              <color name="cpu_black">#010302</color>
-
+              <color name="gold_z">#FFD700</color>
+              <color name="neon_red">#FF0055</color>
               <color name="neon_green">#00FF88</color>
-              <color name="neon_green_light">#7CFFD0</color>
-
-              <color name="neon_orange">#FF7B00</color>
-              <color name="neon_orange_light">#FFB35A</color>
-
-              <color name="white">#FFFFFF</color>
-
+              <color name="shield_dark">#050B14</color>
           </resources>
           EOF
 
+          # Strings
+          cat > app/src/main/res/values/strings.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">जेड प्लस सिक्योरिटी</string>
+          </resources>
+          EOF
 
-      # =========================================================
-      # 10 - THEME
-      # =========================================================
-      - name: 10 - Create Theme
-        run: |
+          # Themes
           cat > app/src/main/res/values/themes.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-
-              <style name="Theme.CPUUtility"
-                  parent="Theme.AppCompat.DayNight.NoActionBar">
-
-                  <item name="android:fontFamily">sans</item>
+              <style name="Theme.ZPlusSecurity" parent="Theme.AppCompat.DayNight.NoActionBar">
                   <item name="android:windowFullscreen">true</item>
-                  <item name="android:windowActionModeOverlay">true</item>
-                  <item name="android:colorAccent">#00FF88</item>
-                  <item name="android:navigationBarColor">#000000</item>
-                  <item name="android:statusBarColor">#000000</item>
-                  <item name="android:windowLightStatusBar">false</item>
-
+                  <item name="android:navigationBarColor">#050B14</item>
+                  <item name="android:statusBarColor">#050B14</item>
               </style>
-
           </resources>
+          EOF
+
+          # Icon Background
+          cat > app/src/main/res/drawable/ic_launcher_background.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#050B14" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#00FF88" android:alpha="0.15" android:pathData="M54,10 L94,26 V58 C94,82 54,98 54,98 C54,98 14,82 14,58 V26 Z"/>
+          </vector>
+          EOF
+
+          # Icon Foreground
+          cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#00000000" android:strokeColor="#00FF88" android:strokeWidth="3.5" android:pathData="M54,16 L86,28 V54 C86,74 54,88 54,88 C54,88 22,74 22,54 V28 Z"/>
+              <path android:fillColor="#00000000" android:strokeColor="#FFD700" android:strokeWidth="1.5" android:pathData="M54,22 L80,32 V52 C80,68 54,80 54,80 C54,80 28,68 28,52 V32 Z"/>
+              <path android:fillColor="#FFD700" android:pathData="M38,38 H70 L46,62 H70 V68 H38 L62,44 H38 Z"/>
+              <path android:fillColor="#00FF88" android:pathData="M64,36 H68 V40 H72 V44 H68 V48 H64 V44 H60 V40 H64 Z"/>
+          </vector>
+          EOF
+
+          # Adaptive Icon Config
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_background"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          EOF
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_background"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
           EOF
 
 
       # =========================================================
-      # 11 - MAIN LAYOUT
+      # 10 - MAIN LAYOUT XML
       # =========================================================
-      - name: 11 - Create Main Layout
+      - name: 10 - Create Activity Main Layout
         run: |
           cat > app/src/main/res/layout/activity_main.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
-
-          <FrameLayout
-              xmlns:android="http://schemas.android.com/apk/res/android"
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#000000">
+              android:background="#050B14">
 
               <WebView
                   android:id="@+id/webView"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
-                  android:background="#000000" />
-
+                  android:background="#050B14" />
           </FrameLayout>
           EOF
 
 
       # =========================================================
-      # 12 - SIMPLE APP ICON
+      # 11 - ANDROID MANIFEST (PERMISSIONS)
       # =========================================================
-      - name: 12 - Create CPU Utility Icon
-        run: |
-          cat > app/src/main/res/drawable/ic_launcher.xml <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-
-          <vector
-              xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp"
-              android:height="108dp"
-              android:viewportWidth="108"
-              android:viewportHeight="108">
-
-              <path
-                  android:fillColor="#050807"
-                  android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
-
-              <path
-                  android:fillColor="#0B1813"
-                  android:pathData="M28,28 L80,28 L80,80 L28,80 Z" />
-
-              <path
-                  android:fillColor="#00FF88"
-                  android:pathData="M38,38 L70,38 L70,70 L38,70 Z" />
-
-              <path
-                  android:fillColor="#FF7B00"
-                  android:pathData="M45,45 L63,45 L63,63 L45,63 Z" />
-
-              <path
-                  android:fillColor="#FFFFFF"
-                  android:pathData="M51,49 L57,49 L57,59 L51,59 Z" />
-
-          </vector>
-          EOF
-
-
-      # =========================================================
-      # 13 - ANDROID MANIFEST
-      # =========================================================
-      - name: 13 - Create Android Manifest
+      - name: 11 - Create Android Manifest
         run: |
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools">
 
-          <manifest
-              xmlns:android="http://schemas.android.com/apk/res/android">
-
-              <uses-permission
-                  android:name="android.permission.VIBRATE" />
+              <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+              <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+              <uses-permission android:name="android.permission.VIBRATE" />
+              <uses-permission android:name="android.permission.INTERNET" />
 
               <application
                   android:allowBackup="false"
-                  android:fullBackupContent="false"
                   android:hardwareAccelerated="true"
-                  android:icon="@drawable/ic_launcher"
-                  android:label="CPU Utility"
-                  android:roundIcon="@drawable/ic_launcher"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:label="@string/app_name"
                   android:supportsRtl="true"
-                  android:theme="@style/Theme.CPUUtility">
+                  android:theme="@style/Theme.ZPlusSecurity">
 
                   <activity
                       android:name=".MainActivity"
                       android:exported="true"
                       android:screenOrientation="portrait"
                       android:configChanges="orientation|screenSize|keyboardHidden">
-
                       <intent-filter>
-
-                          <action
-                              android:name="android.intent.action.MAIN" />
-
-                          <category
-                              android:name="android.intent.category.LAUNCHER" />
-
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
-
                   </activity>
-
               </application>
-
           </manifest>
           EOF
 
 
       # =========================================================
-      # 14 - MAIN KOTLIN
+      # 12 - MAIN ACTIVITY KOTLIN (NEW PERMISSION & POP-UP LOGIC)
       # =========================================================
-      - name: 14 - Create MainActivity Kotlin
+      - name: 12 - Create MainActivity Kotlin Code
         run: |
-          cat > app/src/main/java/com/cpuutility/app/MainActivity.kt <<'EOF'
-          package com.cpuutility.app
+          cat > app/src/main/java/com/zplussecurity/app/MainActivity.kt <<'EOF'
+          package com.zplussecurity.app
 
+          import android.Manifest
           import android.annotation.SuppressLint
-          import android.os.Bundle
+          import android.content.Intent
+          import android.content.pm.ApplicationInfo
+          import android.content.pm.PackageManager
+          import android.net.Uri
           import android.os.Build
+          import android.os.Bundle
+          import android.os.Environment
           import android.os.VibrationEffect
           import android.os.Vibrator
+          import android.provider.Settings
           import android.speech.tts.TextToSpeech
           import android.webkit.JavascriptInterface
           import android.webkit.WebChromeClient
           import android.webkit.WebView
           import android.webkit.WebViewClient
+          import android.widget.Toast
           import androidx.appcompat.app.AppCompatActivity
+          import androidx.core.app.ActivityCompat
+          import androidx.core.content.ContextCompat
+          import org.json.JSONArray
+          import org.json.JSONObject
+          import java.io.File
           import java.util.Locale
 
-          class MainActivity :
-              AppCompatActivity(),
-              TextToSpeech.OnInitListener {
+          class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
               private lateinit var webView: WebView
-
-              private var textToSpeech: TextToSpeech? = null
-
-              private var ttsReady = false
+              private var tts: TextToSpeech? = null
+              private var isTtsReady = false
 
               @SuppressLint("SetJavaScriptEnabled")
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-
                   window.setFlags(
                       android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
                       android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
                   )
-
-                  window.navigationBarColor =
-                      android.graphics.Color.BLACK
-
                   setContentView(R.layout.activity_main)
 
-                  textToSpeech =
-                      TextToSpeech(this, this)
-
-                  webView =
-                      findViewById(R.id.webView)
-
-                  webView.settings.apply {
-
-                      javaScriptEnabled = true
-
-                      domStorageEnabled = true
-
-                      allowFileAccess = true
-
-                      allowContentAccess = true
-
-                      mediaPlaybackRequiresUserGesture = false
-
-                      builtInZoomControls = false
-
-                      displayZoomControls = false
-
-                  }
-
-                  webView.webViewClient =
-                      WebViewClient()
-
-                  webView.webChromeClient =
-                      WebChromeClient()
-
-                  webView.addJavascriptInterface(
-                      AndroidBridge(),
-                      "Android"
-                  )
-
-                  webView.loadUrl(
-                      "file:///android_asset/index.html"
-                  )
+                  tts = TextToSpeech(this, this)
+                  webView = findViewById(R.id.webView)
+                  
+                  setupWebView()
+                  requestPermissionsOnStart()
               }
 
-              inner class AndroidBridge {
-
-                  @JavascriptInterface
-                  fun speak(message: String) {
-
-                      runOnUiThread {
-
-                          if (!ttsReady) {
-                              return@runOnUiThread
+              // 🚀 PERMISSION POP-UP MANAGER 🚀
+              private fun requestPermissionsOnStart() {
+                  // For Android 11+ (API 30+)
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                      if (!Environment.isExternalStorageManager()) {
+                          Toast.makeText(this, "कृपया Z Plus Security को All Files Access दें ताकि स्कैनिंग हो सके", Toast.LENGTH_LONG).show()
+                          try {
+                              val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                              intent.data = Uri.parse("package:$packageName")
+                              startActivity(intent)
+                          } catch (e: Exception) {
+                              val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                              startActivity(intent)
                           }
-
-                          textToSpeech?.speak(
-                              message,
-                              TextToSpeech.QUEUE_FLUSH,
-                              null,
-                              "CPU_UTILITY_MESSAGE"
+                      }
+                  } else {
+                      // For Below Android 11
+                      val writePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                      if (writePermission != PackageManager.PERMISSION_GRANTED) {
+                          ActivityCompat.requestPermissions(
+                              this,
+                              arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                              101
                           )
                       }
                   }
+              }
 
+              private fun setupWebView() {
+                  webView.settings.apply {
+                      javaScriptEnabled = true
+                      domStorageEnabled = true
+                      allowFileAccess = true
+                      allowContentAccess = true
+                      mediaPlaybackRequiresUserGesture = false
+                  }
+                  webView.webViewClient = WebViewClient()
+                  webView.webChromeClient = WebChromeClient()
+                  webView.addJavascriptInterface(ZPlusSecurityBridge(), "AndroidSecurity")
+                  webView.loadUrl("file:///android_asset/index.html")
+              }
+
+              inner class ZPlusSecurityBridge {
+
+                  // 1. Full Offline Deep Scan Engine
                   @JavascriptInterface
-                  fun vibration() {
+                  fun executeFullScan(): String {
+                      val threatsArray = JSONArray()
+                      try {
+                          // A. Scan Hidden Apps
+                          val pm = packageManager
+                          val packages = pm.getInstalledPackages(0)
 
-                      runOnUiThread {
+                          for (pkg in packages) {
+                              val isSystem = (pkg.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                              val launchIntent = pm.getLaunchIntentForPackage(pkg.packageName)
 
-                          try {
-
-                              val vibrator =
-                                  getSystemService(
-                                      VIBRATOR_SERVICE
-                                  ) as Vibrator
-
-                              if (
-                                  Build.VERSION.SDK_INT >=
-                                  Build.VERSION_CODES.O
-                              ) {
-
-                                  vibrator.vibrate(
-                                      VibrationEffect.createOneShot(
-                                          45L,
-                                          VibrationEffect.DEFAULT_AMPLITUDE
-                                      )
-                                  )
-
-                              } else {
-
-                                  @Suppress(
-                                      "DEPRECATION"
-                                  )
-
-                                  vibrator.vibrate(45L)
+                              if (!isSystem && launchIntent == null && pkg.packageName != packageName) {
+                                  val item = JSONObject().apply {
+                                      put("type", "HIDDEN_APP")
+                                      put("name", pkg.applicationInfo.loadLabel(pm).toString().ifEmpty { "Suspicious Payload App" })
+                                      put("target", pkg.packageName)
+                                      put("location", "RAM / Background Package")
+                                      put("risk", "High Risk (Hidden Launcher Icon)")
+                                  }
+                                  threatsArray.put(item)
                               }
-
-                          } catch (_: Exception) {
                           }
+
+                          // B. Scan Downloads Directory
+                          val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                          if (downloadsDir != null && downloadsDir.exists()) {
+                              downloadsDir.listFiles()?.forEach { file ->
+                                  if (file.isFile && (file.name.endsWith(".apk") || file.name.endsWith(".payload") || file.name.endsWith(".tmp"))) {
+                                      val item = JSONObject().apply {
+                                          put("type", "FILE")
+                                          put("name", file.name)
+                                          put("target", file.absolutePath)
+                                          put("location", file.parent ?: "/sdcard/Download")
+                                          put("risk", "Unverified Download Payload")
+                                      }
+                                      threatsArray.put(item)
+                                  }
+                              }
+                          }
+                      } catch (e: Exception) {
+                          e.printStackTrace()
+                      }
+                      return threatsArray.toString()
+                  }
+
+                  // 2. Permanent Single File Deletion
+                  @JavascriptInterface
+                  fun deleteFileThreat(filePath: String): Boolean {
+                      return try {
+                          val file = File(filePath)
+                          if (file.exists()) file.delete() else false
+                      } catch (_: Exception) { false }
+                  }
+
+                  // 3. Uninstall Hidden App (Will trigger Android's uninstaller UI pop-up)
+                  @JavascriptInterface
+                  fun uninstallAppThreat(packageName: String) {
+                      runOnUiThread {
+                          try {
+                              val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+                                  data = Uri.parse("package:$packageName")
+                                  putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                              }
+                              startActivity(intent)
+                          } catch (_: Exception) {}
+                      }
+                  }
+
+                  // 4. Voice Alert
+                  @JavascriptInterface
+                  fun speakAlert(message: String) {
+                      runOnUiThread {
+                          if (isTtsReady) tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, "ZPLUS_SPEECH")
+                      }
+                  }
+
+                  // 5. Haptic Feedback Engine
+                  @JavascriptInterface
+                  fun triggerVibration() {
+                      runOnUiThread {
+                          try {
+                              val vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+                              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                  vibrator.vibrate(VibrationEffect.createOneShot(50L, VibrationEffect.DEFAULT_AMPLITUDE))
+                              } else {
+                                  @Suppress("DEPRECATION")
+                                  vibrator.vibrate(50L)
+                              }
+                          } catch (_: Exception) {}
                       }
                   }
               }
 
               override fun onInit(status: Int) {
-
-                  if (
-                      status ==
-                      TextToSpeech.SUCCESS
-                  ) {
-
-                      ttsReady = true
-
-                      val result =
-                          textToSpeech?.setLanguage(
-                              Locale("hi", "IN")
-                          )
-
-                      if (
-                          result ==
-                          TextToSpeech.LANG_MISSING_DATA ||
-                          result ==
-                          TextToSpeech.LANG_NOT_SUPPORTED
-                      ) {
-
-                          textToSpeech?.language =
-                              Locale.US
-                      }
-
-                      textToSpeech?.setSpeechRate(
-                          0.92f
-                      )
-
-                      textToSpeech?.setPitch(
-                          1.0f
-                      )
+                  if (status == TextToSpeech.SUCCESS) {
+                      isTtsReady = true
+                      tts?.language = Locale("hi", "IN")
+                      tts?.setSpeechRate(0.95f)
+                      tts?.setPitch(1.2f)
                   }
               }
 
               override fun onDestroy() {
-
                   try {
-                      textToSpeech?.stop()
-                      textToSpeech?.shutdown()
-                  } catch (_: Exception) {
-                  }
-
-                  try {
+                      tts?.stop()
+                      tts?.shutdown()
                       webView.destroy()
-                  } catch (_: Exception) {
-                  }
-
+                  } catch (_: Exception) {}
                   super.onDestroy()
               }
           }
@@ -538,2009 +527,212 @@ jobs:
 
 
       # =========================================================
-      # 15 - COMPLETE 3D CPU + BRAIN HTML
+      # 13 - WEBGL THREE.JS 3D HUD & SCANNER INTERFACE
       # =========================================================
-      - name: 15 - Create CPU Utility 3D Engine
+      - name: 13 - Create WebGL 3D Scanner UI
         run: |
           cat > app/src/main/assets/index.html <<'EOF'
           <!DOCTYPE html>
-
           <html lang="hi">
-
           <head>
-
           <meta charset="UTF-8">
-
-          <meta
-              name="viewport"
-              content="width=device-width,
-              initial-scale=1.0,
-              maximum-scale=1.0,
-              user-scalable=no">
-
-          <title>CPU Utility</title>
-
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <title>Z Plus Security 3D</title>
           <style>
-
-          :root {
-              --green: #00ff88;
-              --green2: #18d96f;
-              --green3: #7cffd0;
-
-              --orange: #ff7b00;
-              --orange2: #ffb35a;
-
-              --black: #000000;
-              --dark: #010302;
-          }
-
-          * {
-              box-sizing: border-box;
-
-              -webkit-tap-highlight-color:
-                  transparent;
-          }
-
-          html,
-          body {
-
-              width: 100%;
-              height: 100%;
-
-              margin: 0;
-
-              padding: 0;
-
-              overflow: hidden;
-
-              background: #000;
-
-              color: #fff;
-
-              font-family:
-                  Arial,
-                  Helvetica,
-                  sans-serif;
-
-              touch-action: none;
-          }
-
-          body {
-
-              display: flex;
-
-              justify-content: center;
-
-              align-items: center;
-
-              background:
-
-                  radial-gradient(
-                      circle at 50% 42%,
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .14
-                      ),
-                      transparent 30%
-                  ),
-
-                  radial-gradient(
-                      circle at 50% 95%,
-                      rgba(
-                          255,
-                          123,
-                          0,
-                          .11
-                      ),
-                      transparent 40%
-                  ),
-
-                  #010302;
-          }
-
-          #scene {
-
-              position: relative;
-
-              width: 100vw;
-
-              height: 100vh;
-
-              overflow: hidden;
-
-              perspective: 1200px;
-          }
-
-          .scanlines {
-
-              position: absolute;
-
-              inset: 0;
-
-              z-index: 50;
-
-              pointer-events: none;
-
-              opacity: .09;
-
-              background:
-
-                  repeating-linear-gradient(
-                      to bottom,
-                      transparent 0px,
-                      transparent 3px,
-                      rgba(
-                          255,
-                          255,
-                          255,
-                          .10
-                      ) 4px
-                  );
-          }
-
-          .topTitle {
-
-              position: absolute;
-
-              z-index: 40;
-
-              top: 4%;
-
-              left: 0;
-
-              right: 0;
-
-              text-align: center;
-
-              font-size:
-                  clamp(
-                      14px,
-                      4vw,
-                      21px
-                  );
-
-              font-weight: 900;
-
-              letter-spacing: 5px;
-
-              color: var(--green3);
-
-              text-shadow:
-
-                  0 0 5px var(--green),
-
-                  0 0 18px var(--green),
-
-                  0 0 35px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .55
-                      );
-          }
-
-          .status {
-
-              position: absolute;
-
-              z-index: 40;
-
-              top: 10%;
-
-              left: 0;
-
-              right: 0;
-
-              text-align: center;
-
-              font-size: 10px;
-
-              letter-spacing: 2px;
-
-              color: #63ffb2;
-
-              text-transform: uppercase;
-
-              text-shadow:
-                  0 0 10px var(--green);
-          }
-
-          .grid {
-
-              position: absolute;
-
-              left: -30%;
-
-              right: -30%;
-
-              bottom: -15%;
-
-              height: 52%;
-
-              transform:
-                  perspective(550px)
-                  rotateX(63deg);
-
-              background:
-
-                  linear-gradient(
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .16
-                      ) 1px,
-                      transparent 1px
-                  ),
-
-                  linear-gradient(
-                      90deg,
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .16
-                      ) 1px,
-                      transparent 1px
-                  );
-
-              background-size:
-                  45px 45px;
-
-              opacity: .45;
-
-              filter:
-                  drop-shadow(
-                      0 0 8px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .2
-                      )
-                  );
-          }
-
-          .stage {
-
-              position: absolute;
-
-              inset: 0;
-
-              display: flex;
-
-              justify-content: center;
-
-              align-items: center;
-
-              transform-style:
-                  preserve-3d;
-          }
-
-          /* =====================================================
-             CPU
-             ===================================================== */
-
-          .cpu {
-
-              position: absolute;
-
-              width:
-                  min(
-                      74vw,
-                      340px
-                  );
-
-              height:
-                  min(
-                      74vw,
-                      340px
-                  );
-
-              transform-style:
-                  preserve-3d;
-
-              cursor: pointer;
-
-              transition:
-
-                  opacity .6s ease,
-
-                  transform .6s ease,
-
-                  filter .6s ease;
-          }
-
-          .cpu-shell {
-
-              position: absolute;
-
-              inset: 0;
-
-              border-radius: 30px;
-
-              background:
-
-                  linear-gradient(
-                      145deg,
-                      #283630,
-                      #080d0b 48%,
-                      #18211e
-                  );
-
-              border:
-                  2px solid
-                  rgba(
-                      0,
-                      255,
-                      136,
-                      .55
-                  );
-
-              box-shadow:
-
-                  0 0 0 7px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .05
-                      ),
-
-                  0 0 40px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .30
-                      ),
-
-                  inset 0 0 55px
-                      rgba(
-                          0,
-                          0,
-                          0,
-                          .95
-                      );
-
-              transform:
-                  translateZ(0);
-          }
-
-          .cpu-shell::before {
-
-              content: "";
-
-              position: absolute;
-
-              inset: 15px;
-
-              border-radius: 22px;
-
-              border:
-                  1px solid
-                  rgba(
-                      0,
-                      255,
-                      136,
-                      .28
-                  );
-
-              box-shadow:
-
-                  inset 0 0 25px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .09
-                      );
-          }
-
-          .cpu-shell::after {
-
-              content: "";
-
-              position: absolute;
-
-              inset: -9px;
-
-              border-radius: 35px;
-
-              border:
-                  1px solid
-                  rgba(
-                      255,
-                      123,
-                      0,
-                      .28
-                  );
-
-              animation:
-                  cpuPulse 2s
-                  ease-in-out
-                  infinite;
-          }
-
-          @keyframes cpuPulse {
-
-              0% {
-                  opacity: .25;
-                  transform: scale(.98);
-              }
-
-              50% {
-                  opacity: .8;
-                  transform: scale(1.015);
-              }
-
-              100% {
-                  opacity: .25;
-                  transform: scale(.98);
-              }
-          }
-
-          .chip {
-
-              position: absolute;
-
-              left: 50%;
-
-              top: 50%;
-
-              width: 58%;
-
-              height: 58%;
-
-              transform:
-                  translate(-50%,-50%)
-                  translateZ(35px);
-
-              border-radius: 12px;
-
-              background:
-
-                  linear-gradient(
-                      145deg,
-                      #17231f,
-                      #050807
-                  );
-
-              border:
-                  2px solid
-                  rgba(
-                      255,
-                      123,
-                      0,
-                      .55
-                  );
-
-              box-shadow:
-
-                  0 0 25px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .25
-                      ),
-
-                  inset 0 0 35px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .14
-                      );
-          }
-
-          .chip::before {
-
-              content: "";
-
-              position: absolute;
-
-              inset: 14px;
-
-              background:
-
-                  repeating-linear-gradient(
-                      0deg,
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .18
-                      ) 0px,
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .18
-                      ) 2px,
-                      transparent 2px,
-                      transparent 7px
-                  );
-
-              opacity: .8;
-          }
-
-          .chipText {
-
-              position: absolute;
-
-              inset: 0;
-
-              display: flex;
-
-              justify-content: center;
-
-              align-items: center;
-
-              flex-direction: column;
-
-              text-align: center;
-
-              z-index: 2;
-
-              text-shadow:
-
-                  0 0 8px var(--green),
-
-                  0 0 20px var(--green);
-          }
-
-          .chipText strong {
-
-              font-size:
-                  clamp(
-                      24px,
-                      8vw,
-                      42px
-                  );
-
-              letter-spacing: 3px;
-
-              color: #d7ffe9;
-          }
-
-          .chipText small {
-
-              margin-top: 5px;
-
-              color: var(--orange2);
-
-              font-size: 10px;
-
-              letter-spacing: 3px;
-          }
-
-          .pin {
-
-              position: absolute;
-
-              background:
-                  linear-gradient(
-                      90deg,
-                      #75451f,
-                      #ffb35a,
-                      #75451f
-                  );
-
-              box-shadow:
-                  0 0 6px
-                  rgba(
-                      255,
-                      123,
-                      0,
-                      .45
-                  );
-          }
-
-          .pin.top,
-          .pin.bottom {
-
-              width: 65%;
-
-              height: 5px;
-
-              left: 17.5%;
-          }
-
-          .pin.left,
-          .pin.right {
-
-              width: 5px;
-
-              height: 65%;
-
-              top: 17.5%;
-          }
-
-          .pin.top {
-              top: 5%;
-          }
-
-          .pin.bottom {
-              bottom: 5%;
-          }
-
-          .pin.left {
-              left: 5%;
-          }
-
-          .pin.right {
-              right: 5%;
-          }
-
-          .led {
-
-              position: absolute;
-
-              width: 10px;
-
-              height: 10px;
-
-              border-radius: 50%;
-
-              background: var(--green);
-
-              box-shadow:
-
-                  0 0 6px var(--green),
-
-                  0 0 18px var(--green),
-
-                  0 0 30px var(--green);
-
-              animation:
-                  ledBlink
-                  1.15s
-                  ease-in-out
-                  infinite;
-          }
-
-          .led:nth-child(1) {
-              left: 12%;
-              top: 12%;
-          }
-
-          .led:nth-child(2) {
-              right: 12%;
-              top: 12%;
-              animation-delay: .2s;
-          }
-
-          .led:nth-child(3) {
-              left: 12%;
-              bottom: 12%;
-              animation-delay: .4s;
-          }
-
-          .led:nth-child(4) {
-              right: 12%;
-              bottom: 12%;
-              animation-delay: .6s;
-          }
-
-          @keyframes ledBlink {
-
-              0%,
-              100% {
-                  opacity: .25;
-                  transform: scale(.75);
-              }
-
-              50% {
-                  opacity: 1;
-                  transform: scale(1.25);
-              }
-          }
-
-          /* =====================================================
-             BRAIN
-             ===================================================== */
-
-          .brain {
-
-              position: absolute;
-
-              width:
-                  min(
-                      82vw,
-                      390px
-                  );
-
-              height:
-                  min(
-                      82vw,
-                      390px
-                  );
-
-              display: flex;
-
-              justify-content: center;
-
-              align-items: center;
-
-              opacity: 0;
-
-              pointer-events: none;
-
-              transform:
-                  perspective(1000px)
-                  rotateY(var(--rot,0deg))
-                  rotateX(4deg)
-                  scale(.72);
-
-              transform-style:
-                  preserve-3d;
-
-              transition:
-                  opacity .8s ease,
-                  transform .15s ease;
-
-              filter:
-                  drop-shadow(
-                      0 0 22px
-                      rgba(
-                          255,
-                          123,
-                          0,
-                          .35
-                      )
-                  );
-          }
-
-          .brain.show {
-
-              opacity: 1;
-
-              pointer-events: auto;
-
-              transform:
-                  perspective(1000px)
-                  rotateY(var(--rot,0deg))
-                  rotateX(4deg)
-                  scale(1);
-          }
-
-          .brainFrame {
-
-              position: absolute;
-
-              width: 100%;
-
-              height: 100%;
-
-              display: flex;
-
-              justify-content: center;
-
-              align-items: center;
-
-              transform-style:
-                  preserve-3d;
-          }
-
-          .brainGlow {
-
-              position: absolute;
-
-              width: 75%;
-
-              height: 70%;
-
-              border-radius: 50%;
-
-              background:
-
-                  radial-gradient(
-                      ellipse,
-                      rgba(
-                          255,
-                          116,
-                          0,
-                          .26
-                      ),
-                      transparent 67%
-                  );
-
-              filter:
-                  blur(10px);
-
-              animation:
-                  brainGlow 2s
-                  ease-in-out
-                  infinite;
-          }
-
-          @keyframes brainGlow {
-
-              0% {
-                  transform: scale(.92);
-                  opacity: .45;
-              }
-
-              50% {
-                  transform: scale(1.05);
-                  opacity: .9;
-              }
-
-              100% {
-                  transform: scale(.92);
-                  opacity: .45;
-              }
-          }
-
-          .brainSvg {
-
-              width: 100%;
-
-              height: 100%;
-
-              overflow: visible;
-
-              filter:
-                  drop-shadow(
-                      0 0 8px
-                      rgba(
-                          255,
-                          123,
-                          0,
-                          .8
-                      )
-                  );
-          }
-
-          .brainPath {
-
-              fill:
-
-                  url(#brainGradient);
-
-              stroke:
-                  #ff9a32;
-
-              stroke-width: 3;
-
-              stroke-linejoin: round;
-
-              filter:
-                  drop-shadow(
-                      0 0 5px
-                      #ff7b00
-                  );
-          }
-
-          .fold {
-
-              fill: none;
-
-              stroke:
-                  #ffcc8a;
-
-              stroke-width: 3;
-
-              stroke-linecap: round;
-
-              opacity: .9;
-
-              filter:
-                  drop-shadow(
-                      0 0 3px
-                      #ff7b00
-                  );
-          }
-
-          .fold2 {
-
-              fill: none;
-
-              stroke:
-                  #00ffb0;
-
-              stroke-width: 2;
-
-              stroke-linecap: round;
-
-              opacity: .7;
-
-              filter:
-                  drop-shadow(
-                      0 0 4px
-                      #00ff88
-                  );
-          }
-
-          .neuron {
-
-              fill:
-                  #00ff9d;
-
-              filter:
-                  drop-shadow(
-                      0 0 6px
-                      #00ff88
-                  );
-
-              animation:
-                  neuronPulse
-                  1.5s
-                  ease-in-out
-                  infinite;
-          }
-
-          @keyframes neuronPulse {
-
-              0% {
-                  opacity: .3;
-                  r: 2;
-              }
-
-              50% {
-                  opacity: 1;
-                  r: 5;
-              }
-
-              100% {
-                  opacity: .3;
-                  r: 2;
-              }
-          }
-
-          #brainReveal {
-
-              clip-path:
-                  inset(
-                      100% 0 0 0
-                  );
-
-              transition:
-                  clip-path .1s linear;
-          }
-
-          #brainProgress {
-
-              position: absolute;
-
-              left: 16%;
-
-              right: 16%;
-
-              bottom: 7%;
-
-              height: 5px;
-
-              border-radius: 10px;
-
-              background:
-                  rgba(
-                      0,
-                      255,
-                      136,
-                      .12
-                  );
-
-              overflow: hidden;
-
-              box-shadow:
-                  0 0 8px
-                  rgba(
-                      0,
-                      255,
-                      136,
-                      .25
-                  );
-          }
-
-          #brainProgress span {
-
-              display: block;
-
-              width: 0%;
-
-              height: 100%;
-
-              border-radius: 10px;
-
-              background:
-                  linear-gradient(
-                      90deg,
-                      #00ff88,
-                      #ff7b00
-                  );
-
-              box-shadow:
-                  0 0 12px
-                  #00ff88;
-          }
-
-          .message {
-
-              position: absolute;
-
-              z-index: 45;
-
-              left: 7%;
-
-              right: 7%;
-
-              bottom: 12%;
-
-              padding:
-                  15px 18px;
-
-              border-radius: 16px;
-
-              border:
-                  1px solid
-                  rgba(
-                      0,
-                      255,
-                      136,
-                      .45
-                  );
-
-              background:
-                  rgba(
-                      0,
-                      15,
-                      10,
-                      .90
-                  );
-
-              color:
-                  #d9ffed;
-
-              text-align: center;
-
-              font-size: 13px;
-
-              line-height: 1.5;
-
-              opacity: 0;
-
-              transform:
-                  translateY(15px);
-
-              transition:
-                  .4s ease;
-
-              box-shadow:
-
-                  0 0 25px
-                      rgba(
-                          0,
-                          255,
-                          136,
-                          .12
-                      );
-          }
-
-          .message.show {
-
-              opacity: 1;
-
-              transform:
-                  translateY(0);
-          }
-
-          .hint {
-
-              position: absolute;
-
-              z-index: 40;
-
-              bottom: 4%;
-
-              left: 5%;
-
-              right: 5%;
-
-              text-align: center;
-
-              font-size: 9px;
-
-              letter-spacing: .7px;
-
-              color:
-                  rgba(
-                      220,
-                      255,
-                      238,
-                      .55
-                  );
-          }
-
-          .corner {
-
-              position: absolute;
-
-              z-index: 35;
-
-              width: 45px;
-
-              height: 45px;
-
-              border-color:
-                  rgba(
-                      0,
-                      255,
-                      136,
-                      .45
-                  );
-
-              border-style: solid;
-          }
-
-          .corner.tl {
-
-              top: 18%;
-
-              left: 5%;
-
-              border-width:
-                  2px 0 0 2px;
-          }
-
-          .corner.tr {
-
-              top: 18%;
-
-              right: 5%;
-
-              border-width:
-                  2px 2px 0 0;
-          }
-
-          .corner.bl {
-
-              bottom: 14%;
-
-              left: 5%;
-
-              border-width:
-                  0 0 2px 2px;
-          }
-
-          .corner.br {
-
-              bottom: 14%;
-
-              right: 5%;
-
-              border-width:
-                  0 2px 2px 0;
-          }
-
+              * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+              html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #050b14; font-family: 'Segoe UI', Roboto, sans-serif; }
+              #webgl-container { width: 100vw; height: 100vh; position: absolute; inset: 0; z-index: 1; }
+              .ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+              .header { text-align: center; }
+              .brand-title { font-size: 22px; font-weight: 900; letter-spacing: 3px; color: #ffd700; text-shadow: 0 0 15px rgba(255,215,0,0.6); }
+              .sub-status { font-size: 11px; letter-spacing: 2px; color: #00ff88; margin-top: 4px; text-transform: uppercase; text-shadow: 0 0 8px rgba(0,255,136,0.6); }
+              .action-box { align-self: center; pointer-events: auto; text-align: center; margin-bottom: 20px; }
+              .btn-scan { background: linear-gradient(135deg, #00ff88, #008855); border: none; color: #050b14; font-size: 15px; font-weight: 800; padding: 16px 36px; border-radius: 30px; box-shadow: 0 0 25px rgba(0,255,136,0.5); cursor: pointer; letter-spacing: 1.5px; transition: transform 0.2s; }
+              .btn-scan:active { transform: scale(0.95); }
+              .threat-modal { position: absolute; inset: 0; z-index: 20; background: rgba(5, 11, 20, 0.95); display: none; flex-direction: column; padding: 24px 18px; overflow-y: auto; }
+              .threat-modal.active { display: flex; }
+              .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,0,85,0.4); padding-bottom: 12px; margin-bottom: 16px; }
+              .modal-title { color: #ff0055; font-size: 18px; font-weight: 800; }
+              .threat-card { background: rgba(255,0,85,0.08); border: 1px solid rgba(255,0,85,0.3); border-radius: 12px; padding: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+              .threat-info { max-width: 70%; }
+              .threat-name { color: #fff; font-size: 14px; font-weight: 700; word-break: break-all; }
+              .threat-loc { color: rgba(255,255,255,0.6); font-size: 11px; margin-top: 4px; word-break: break-all; }
+              .threat-risk { color: #ff0055; font-size: 11px; font-weight: 700; margin-top: 2px; }
+              .btn-delete-one { background: #ff0055; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; }
+              .btn-delete-all { background: linear-gradient(135deg, #ff0055, #990033); color: #fff; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: auto; box-shadow: 0 0 20px rgba(255,0,85,0.4); }
           </style>
-
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
           </head>
-
           <body>
-
-          <div id="scene">
-
-              <div class="scanlines"></div>
-
-              <div class="topTitle">
-                  CPU UTILITY
+          <div id="webgl-container"></div>
+          <div class="ui-layer">
+              <div class="header">
+                  <div class="brand-title">Z PLUS SECURITY</div>
+                  <div class="sub-status" id="statusText">AI HARDWARE SCANNER • OFFLINE CORE</div>
               </div>
-
-              <div
-                  class="status"
-                  id="status">
-                  CPU CORE • STANDBY
+              <div class="action-box">
+                  <button class="btn-scan" id="scanBtn" onclick="startZPlusScan()">START DEEP SCAN</button>
               </div>
-
-              <div class="grid"></div>
-
-              <div class="corner tl"></div>
-              <div class="corner tr"></div>
-              <div class="corner bl"></div>
-              <div class="corner br"></div>
-
-              <div class="stage">
-
-                  <!-- =================================================
-                       CPU
-                       ================================================= -->
-
-                  <div
-                      class="cpu"
-                      id="cpu">
-
-                      <div class="cpu-shell">
-
-                          <div class="pin top"></div>
-                          <div class="pin bottom"></div>
-                          <div class="pin left"></div>
-                          <div class="pin right"></div>
-
-                          <div class="led"></div>
-                          <div class="led"></div>
-                          <div class="led"></div>
-                          <div class="led"></div>
-
-                          <div class="chip">
-
-                              <div class="chipText">
-
-                                  <strong>
-                                      CPU
-                                  </strong>
-
-                                  <small>
-                                      UTILITY CORE
-                                  </small>
-
-                              </div>
-
-                          </div>
-
-                      </div>
-
-                  </div>
-
-
-                  <!-- =================================================
-                       BRAIN
-                       ================================================= -->
-
-                  <div
-                      class="brain"
-                      id="brain">
-
-                      <div class="brainFrame">
-
-                          <div class="brainGlow"></div>
-
-                          <svg
-                              class="brainSvg"
-                              viewBox="0 0 500 400">
-
-                              <defs>
-
-                                  <linearGradient
-                                      id="brainGradient"
-                                      x1="0%"
-                                      y1="0%"
-                                      x2="100%"
-                                      y2="100%">
-
-                                      <stop
-                                          offset="0%"
-                                          stop-color="#ff4b00" />
-
-                                      <stop
-                                          offset="45%"
-                                          stop-color="#ff8b18" />
-
-                                      <stop
-                                          offset="100%"
-                                          stop-color="#57200b" />
-
-                                  </linearGradient>
-
-                              </defs>
-
-                              <g id="brainReveal">
-
-                                  <path
-                                      class="brainPath"
-                                      d="
-                                      M250 63
-                                      C215 34 160 48 142 88
-                                      C100 82 67 111 78 151
-                                      C43 177 53 230 88 245
-                                      C66 286 97 329 138 323
-                                      C159 365 209 357 229 330
-                                      C242 347 258 347 271 330
-                                      C292 359 342 365 363 323
-                                      C404 329 435 286 412 245
-                                      C447 229 457 177 422 151
-                                      C433 111 400 82 358 88
-                                      C340 48 285 34 250 63 Z" />
-
-                                  <path
-                                      class="fold"
-                                      d="
-                                      M152 107
-                                      C183 93 198 113 176 134
-                                      C151 158 185 171 168 194
-                                      C148 221 179 236 161 260
-                                      C147 280 165 300 185 293" />
-
-                                  <path
-                                      class="fold"
-                                      d="
-                                      M348 107
-                                      C317 93 302 113 324 134
-                                      C349 158 315 171 332 194
-                                      C352 221 321 236 339 260
-                                      C353 280 335 300 315 293" />
-
-                                  <path
-                                      class="fold2"
-                                      d="
-                                      M209 81
-                                      C229 65 246 82 234 102
-                                      C222 123 246 138 231 158
-                                      C217 178 239 193 227 213
-                                      C215 232 230 249 221 273" />
-
-                                  <path
-                                      class="fold2"
-                                      d="
-                                      M291 81
-                                      C271 65 254 82 266 102
-                                      C278 123 254 138 269 158
-                                      C283 178 261 193 273 213
-                                      C285 232 270 249 279 273" />
-
-                                  <path
-                                      class="fold"
-                                      d="
-                                      M250 73
-                                      C237 103 264 118 250 144
-                                      C236 170 263 185 250 211
-                                      C237 238 263 256 250 292" />
-
-                                  <path
-                                      class="fold2"
-                                      d="
-                                      M111 157
-                                      C137 142 154 158 137 177
-                                      C119 197 145 213 130 232" />
-
-                                  <path
-                                      class="fold2"
-                                      d="
-                                      M389 157
-                                      C363 142 346 158 363 177
-                                      C381 197 355 213 370 232" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="154"
-                                      cy="125"
-                                      r="3" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="346"
-                                      cy="125"
-                                      r="3" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="115"
-                                      cy="205"
-                                      r="3" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="385"
-                                      cy="205"
-                                      r="3" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="190"
-                                      cy="285"
-                                      r="3" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="310"
-                                      cy="285"
-                                      r="3" />
-
-                                  <circle
-                                      class="neuron"
-                                      cx="250"
-                                      cy="105"
-                                      r="3" />
-
-                              </g>
-
-                          </svg>
-
-                          <div
-                              id="brainProgress">
-
-                              <span></span>
-
-                          </div>
-
-                      </div>
-
-                  </div>
-
-              </div>
-
-              <div
-                  class="message"
-                  id="message">
-
-                  नमस्ते। मैं आपकी मदद के लिए तैयार हूँ।
-                  आप क्या करना चाहते हैं?
-
-              </div>
-
-              <div
-                  class="hint"
-                  id="hint">
-
-                  CPU पर Double Tap करें
-
-              </div>
-
           </div>
-
-
+          <div class="threat-modal" id="threatModal">
+              <div class="modal-header">
+                  <div class="modal-title" id="threatCountTitle">DANGER DETECTED (0)</div>
+                  <button style="background:none; border:none; color:#fff; font-size:20px;" onclick="closeModal()">✕</button>
+              </div>
+              <div id="threatListContainer"></div>
+              <button class="btn-delete-all" id="btnDeleteAll" onclick="deleteAllThreats()">DELETE ALL PERMANENTLY</button>
+          </div>
           <script>
-
-          const cpu =
-              document.getElementById(
-                  "cpu"
-              );
-
-          const brain =
-              document.getElementById(
-                  "brain"
-              );
-
-          const brainReveal =
-              document.getElementById(
-                  "brainReveal"
-              );
-
-          const progress =
-              document.querySelector(
-                  "#brainProgress span"
-              );
-
-          const status =
-              document.getElementById(
-                  "status"
-              );
-
-          const message =
-              document.getElementById(
-                  "message"
-              );
-
-          const hint =
-              document.getElementById(
-                  "hint"
-              );
-
-
-          let brainOnline = false;
-
-          let revealing = false;
-
-          let rotation = 0;
-
-          let dragging = false;
-
-          let startX = 0;
-
-          let startRotation = 0;
-
-          let moved = false;
-
-          let lastTap = 0;
-
-          let spoken = false;
-
-
-          function androidCall(
-              name,
-              value = ""
-          ) {
-
-              try {
-
-                  if (
-                      window.Android &&
-                      typeof
-                      window.Android[name]
-                      === "function"
-                  ) {
-
-                      window.Android[name](value);
-
-                  }
-
-              } catch (error) {
-
-              }
-
+          function callNative(method, arg="") {
+              try { if (window.AndroidSecurity && window.AndroidSecurity[method]) return window.AndroidSecurity[method](arg); } catch(e){}
+              return "";
           }
 
+          const container = document.getElementById('webgl-container');
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+          camera.position.set(0, 0, 7);
+          const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+          container.appendChild(renderer.domElement);
 
-          function vibration() {
+          scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+          const greenLight = new THREE.PointLight(0x00ff88, 3, 10); greenLight.position.set(2, 3, 3); scene.add(greenLight);
+          const goldLight = new THREE.PointLight(0xffd700, 3, 10); goldLight.position.set(-2, -2, 3); scene.add(goldLight);
 
-              androidCall(
-                  "vibration"
-              );
+          const shieldGroup = new THREE.Group();
+          const shieldShape = new THREE.Shape();
+          shieldShape.moveTo(0, 1.8); shieldShape.lineTo(1.4, 1.0); shieldShape.lineTo(1.4, -0.4); shieldShape.lineTo(0, -1.8); shieldShape.lineTo(-1.4, -0.4); shieldShape.lineTo(-1.4, 1.0); shieldShape.closePath();
+          const extrudeSettings = { depth: 0.2, bevelEnabled: true, bevelSegments: 3, steps: 1, bevelSize: 0.05, bevelThickness: 0.05 };
+          const shieldGeo = new THREE.ExtrudeGeometry(shieldShape, extrudeSettings);
+          const shieldMat = new THREE.MeshStandardMaterial({ color: 0x050b14, roughness: 0.2, metalness: 0.9 });
+          shieldGroup.add(new THREE.Mesh(shieldGeo, shieldMat));
+          
+          const ringGeo = new THREE.TorusGeometry(2.2, 0.03, 16, 100);
+          const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true });
+          const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+          shieldGroup.add(ringMesh);
+          scene.add(shieldGroup);
+
+          let isScanning = false;
+          let currentThreats = [];
+
+          function animate() {
+              requestAnimationFrame(animate);
+              shieldGroup.rotation.y += isScanning ? 0.08 : 0.008;
+              ringMesh.rotation.z -= 0.01;
+              renderer.render(scene, camera);
           }
+          animate();
 
+          function startZPlusScan() {
+              callNative("triggerVibration");
+              callNative("speakAlert", "जेड प्लस सिक्योरिटी स्कैनिंग शुरू हो रही है");
+              isScanning = true;
+              document.getElementById('statusText').innerText = "SCANNING RAM & STORAGE...";
+              document.getElementById('scanBtn').style.opacity = "0.5";
 
-          /* ==========================================================
-             CPU DOUBLE TAP
-             ========================================================== */
+              setTimeout(() => {
+                  const resultJson = callNative("executeFullScan");
+                  try { currentThreats = JSON.parse(resultJson || "[]"); } catch(e) { currentThreats = []; }
+                  isScanning = false;
+                  document.getElementById('scanBtn').style.opacity = "1";
 
-          let cpuLastTap = 0;
-
-          cpu.addEventListener(
-              "pointerup",
-              function(event) {
-
-                  if (revealing) {
-                      return;
-                  }
-
-                  if (moved) {
-                      moved = false;
-                      return;
-                  }
-
-                  const now =
-                      Date.now();
-
-                  if (
-                      now -
-                      cpuLastTap
-                      < 350
-                  ) {
-
-                      cpuLastTap = 0;
-
-                      startBrainBoot();
-
+                  if (currentThreats.length > 0) {
+                      callNative("speakAlert", "सावधान! आपके फोन में " + currentThreats.length + " मालवेयर पाए गए हैं");
+                      showThreatModal();
                   } else {
-
-                      cpuLastTap = now;
-
+                      document.getElementById('statusText').innerText = "SYSTEM SECURE • NO MALWARE FOUND";
+                      callNative("speakAlert", "आपका डिवाइस 100% सुरक्षित है");
                   }
-
-              }
-          );
-
-
-          /* ==========================================================
-             BRAIN 5 SECOND BOOT
-             ========================================================== */
-
-          function startBrainBoot() {
-
-              if (
-                  brainOnline ||
-                  revealing
-              ) {
-                  return;
-              }
-
-              revealing = true;
-
-              vibration();
-
-              status.textContent =
-                  "NEURAL CORE BOOTING • 0%";
-
-              hint.textContent =
-                  "Brain निर्माण हो रहा है...";
-
-              cpu.style.opacity = "0";
-
-              cpu.style.transform =
-                  "scale(.72) rotateX(25deg)";
-
-              cpu.style.pointerEvents =
-                  "none";
-
-              brain.classList.add(
-                  "show"
-              );
-
-              const start =
-                  performance.now();
-
-              const duration =
-                  5000;
-
-
-              function animateBoot(
-                  currentTime
-              ) {
-
-                  const elapsed =
-                      currentTime -
-                      start;
-
-                  const raw =
-                      Math.min(
-                          1,
-                          elapsed /
-                          duration
-                      );
-
-                  /* smooth 5-second easing */
-
-                  const eased =
-                      1 -
-                      Math.pow(
-                          1 - raw,
-                          3
-                      );
-
-                  const percent =
-                      eased * 100;
-
-
-                  brainReveal.style.clipPath =
-                      "inset(" +
-                      (100 - percent) +
-                      "% 0 0 0)";
-
-
-                  progress.style.width =
-                      percent.toFixed(1) +
-                      "%";
-
-
-                  status.textContent =
-                      "NEURAL CORE BOOTING • " +
-                      Math.round(
-                          percent
-                      ) +
-                      "%";
-
-
-                  if (
-                      raw < 1
-                  ) {
-
-                      requestAnimationFrame(
-                          animateBoot
-                      );
-
-                  } else {
-
-                      brainOnline =
-                          true;
-
-                      revealing =
-                          false;
-
-                      brainReveal.style.clipPath =
-                          "inset(0% 0 0 0)";
-
-                      progress.style.width =
-                          "100%";
-
-                      status.textContent =
-                          "BRAIN ONLINE • ±90°";
-
-                      hint.textContent =
-                          "Brain को बाएँ/दाएँ drag करें • ±90° • Double Tap";
-
-                      vibration();
-
-                  }
-
-              }
-
-
-              requestAnimationFrame(
-                  animateBoot
-              );
+              }, 3000);
           }
 
-
-          /* ==========================================================
-             BRAIN 3D LEFT / RIGHT ROTATION
-             ========================================================== */
-
-          brain.addEventListener(
-              "pointerdown",
-              function(event) {
-
-                  if (
-                      !brainOnline
-                  ) {
-                      return;
-                  }
-
-                  dragging = true;
-
-                  moved = false;
-
-                  startX =
-                      event.clientX;
-
-                  startRotation =
-                      rotation;
-
-                  brain.setPointerCapture?.(
-                      event.pointerId
-                  );
-
-              }
-          );
-
-
-          brain.addEventListener(
-              "pointermove",
-              function(event) {
-
-                  if (
-                      !dragging ||
-                      !brainOnline
-                  ) {
-                      return;
-                  }
-
-                  const dx =
-                      event.clientX -
-                      startX;
-
-                  if (
-                      Math.abs(dx) > 5
-                  ) {
-
-                      moved = true;
-
-                  }
-
-                  /*
-                     Rotation limited
-                     to -90 and +90
-                  */
-
-                  rotation =
-                      Math.max(
-                          -90,
-                          Math.min(
-                              90,
-                              startRotation +
-                              dx * 0.55
-                          )
-                      );
-
-                  brain.style.setProperty(
-                      "--rot",
-                      rotation + "deg"
-                  );
-
-              }
-          );
-
-
-          brain.addEventListener(
-              "pointerup",
-              function() {
-
-                  dragging = false;
-
-              }
-          );
-
-
-          brain.addEventListener(
-              "pointercancel",
-              function() {
-
-                  dragging = false;
-
-              }
-          );
-
-
-          /* ==========================================================
-             BRAIN DOUBLE TAP
-             ========================================================== */
-
-          brain.addEventListener(
-              "pointerup",
-              function(event) {
-
-                  if (
-                      !brainOnline ||
-                      moved
-                  ) {
-                      return;
-                  }
-
-                  const now =
-                      Date.now();
-
-                  if (
-                      now -
-                      lastTap
-                      < 350
-                  ) {
-
-                      lastTap = 0;
-
-                      speakAssistant();
-
-                  } else {
-
-                      lastTap = now;
-
-                  }
-
-              }
-          );
-
-
-          function speakAssistant() {
-
-              if (spoken) {
-                  return;
-              }
-
-              spoken = true;
-
-              status.textContent =
-                  "ASSIST MODE READY";
-
-              message.classList.add(
-                  "show"
-              );
-
-              vibration();
-
-              androidCall(
-                  "speak",
-                  "नमस्ते। मैं आपकी मदद के लिए तैयार हूँ। आप क्या करना चाहते हैं?"
-              );
-
-
-              setTimeout(
-                  function() {
-
-                      spoken = false;
-
-                  },
-                  5000
-              );
-
+          function showThreatModal() {
+              const modal = document.getElementById('threatModal');
+              const container = document.getElementById('threatListContainer');
+              document.getElementById('threatCountTitle').innerText = `DANGER DETECTED (${currentThreats.length})`;
+              container.innerHTML = "";
+              currentThreats.forEach((item, index) => {
+                  const card = document.createElement('div');
+                  card.className = "threat-card";
+                  card.innerHTML = `
+                      <div class="threat-info">
+                          <div class="threat-name">${item.name}</div>
+                          <div class="threat-loc">${item.location}</div>
+                          <div class="threat-risk">${item.risk}</div>
+                      </div>
+                      <button class="btn-delete-one" onclick="deleteSingleThreat(${index})">DELETE</button>
+                  `;
+                  container.appendChild(card);
+              });
+              modal.classList.add('active');
           }
 
+          function closeModal() { document.getElementById('threatModal').classList.remove('active'); }
 
-          /* ==========================================================
-             BACKGROUND NEURAL MOTION
-             ========================================================== */
-
-          let pulseAngle = 0;
-
-          function ambientAnimation() {
-
-              pulseAngle += 0.02;
-
-              if (
-                  brainOnline &&
-                  !dragging
-              ) {
-
-                  /*
-                     बहुत हल्का cinematic
-                     breathing effect
-                  */
-
-                  const breathing =
-                      Math.sin(
-                          pulseAngle
-                      ) * 1.2;
-
-                  brain.style.filter =
-                      "drop-shadow(0 0 " +
-                      (22 +
-                          breathing) +
-                      "px rgba(255,123,0,.38))";
+          function deleteSingleThreat(index) {
+              callNative("triggerVibration");
+              const threat = currentThreats[index];
+              if (threat.type === "FILE") callNative("deleteFileThreat", threat.target);
+              else if (threat.type === "HIDDEN_APP") callNative("uninstallAppThreat", threat.target);
+              
+              currentThreats.splice(index, 1);
+              if (currentThreats.length === 0) {
+                  closeModal();
+                  document.getElementById('statusText').innerText = "ALL THREATS CLEARED • SYSTEM SECURE";
+                  callNative("speakAlert", "सभी वायरस सफलतापूर्वक हटा दिए गए हैं");
+              } else {
+                  showThreatModal();
               }
-
-              requestAnimationFrame(
-                  ambientAnimation
-              );
           }
 
-          ambientAnimation();
-
-
-          /* ==========================================================
-             PREVENT LONG-PRESS MENU
-             ========================================================== */
-
-          document.addEventListener(
-              "contextmenu",
-              function(event) {
-
-                  event.preventDefault();
-
+          function deleteAllThreats() {
+              callNative("triggerVibration");
+              callNative("speakAlert", "सभी खतरनाक फाइलों को हटाया जा रहा है");
+              for (let i = currentThreats.length - 1; i >= 0; i--) {
+                  const threat = currentThreats[i];
+                  if (threat.type === "FILE") callNative("deleteFileThreat", threat.target);
+                  else if (threat.type === "HIDDEN_APP") callNative("uninstallAppThreat", threat.target);
               }
-          );
-
-
+              currentThreats = [];
+              closeModal();
+              document.getElementById('statusText').innerText = "ALL THREATS CLEARED • SYSTEM SECURE";
+          }
           </script>
-
           </body>
-
           </html>
           EOF
 
 
       # =========================================================
-      # 16 - VERIFY NO OLD NOTICE CODE
+      # 14 - BUILD GRADLE DEBUG APK
       # =========================================================
-      - name: 16 - Verify CPU Utility Project
+      - name: 14 - Build APK
         run: |
           set -euo pipefail
-
-          echo "========================================="
-          echo "CPU Utility Project Verification"
-          echo "========================================="
-
-          grep -R "com.cpuutility.app" app
-          grep -R "CPU Utility" app
-
-          if grep -R "com.zeeshan.notice" app; then
-              echo "ERROR: Old Zeeshan Notice package found!"
-              exit 1
-          fi
-
-          if grep -R "Zeeshan Notice" app; then
-              echo "ERROR: Old Zeeshan Notice text found!"
-              exit 1
-          fi
-
-          echo "Old Notice app removed successfully."
-          echo "CPU Utility project is ready."
-
-
-      # =========================================================
-      # 17 - BUILD APK
-      # =========================================================
-      - name: 17 - Build CPU Utility Debug APK
-        run: |
-          set -euo pipefail
-
           gradle :app:assembleDebug --no-daemon
-
           test -f app/build/outputs/apk/debug/app-debug.apk
-
-          echo "APK BUILD SUCCESSFUL"
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
+          echo "Z PLUS SECURITY APK BUILD SUCCESSFUL"
 
 
       # =========================================================
-      # 18 - RENAME APK
+      # 15 - RENAME APK DELIVERABLE
       # =========================================================
-      - name: 18 - Rename APK
+      - name: 15 - Rename APK
         run: |
           cp \
             app/build/outputs/apk/debug/app-debug.apk \
-            app/build/outputs/apk/debug/CPU-Utility.apk
-
-          ls -lh \
-            app/build/outputs/apk/debug/CPU-Utility.apk
+            app/build/outputs/apk/debug/Z-Plus-Security.apk
 
 
       # =========================================================
-      # 19 - UPLOAD APK
+      # 16 - UPLOAD APK ARTIFACT
       # =========================================================
-      - name: 19 - Upload CPU Utility APK
+      - name: 16 - Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CPU-Utility-APK
-          path: app/build/outputs/apk/debug/CPU-Utility.apk
+          name: Z-Plus-Security-APK
+          path: app/build/outputs/apk/debug/Z-Plus-Security.apk
           if-no-files-found: error
